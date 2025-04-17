@@ -57,7 +57,7 @@ CREATE TABLE staff_category (
 CREATE TABLE staff_type (
     staff_type_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description VARCHAR(255)
+    description VARCHAR(255),
     staff_category_id INT NOT NULL,
     FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id)
 );
