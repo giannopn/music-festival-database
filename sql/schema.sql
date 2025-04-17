@@ -56,7 +56,7 @@ CREATE TABLE band(
   FOREIGN KEY (subgenre_id) references subgenre (subgenre_id)
 );
 
-CREATE TABLE artist_band (
+CREATE TABLE band_membership (
     artist_id INTEGER NOT NULL,
     band_id INTEGER NOT NULL,
     PRIMARY KEY (artist_id, band_id),
@@ -80,7 +80,7 @@ CREATE SEQUENCE performance_id_seq
 
 CREATE TABLE performance (
     performance_id integer DEFAULT nextval('performance_id_seq'::regclass) PRIMARY KEY,
-    --name varchar(40) NOT NULL,
+    name varchar(40) NOT NULL,
     event_id integer NOT NULL, 
     artist_id integer,
     band_id integer,
