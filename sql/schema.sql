@@ -20,6 +20,7 @@ CREATE TABLE festival (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     location_id INT NOT NULL,
+    UNIQUE (location_id),
     year INT GENERATED ALWAYS AS (EXTRACT(YEAR FROM start_date)::int) STORED,
     UNIQUE (year),
     FOREIGN KEY (location_id) REFERENCES location(location_id)
@@ -47,10 +48,18 @@ CREATE TABLE stage_equipment (
     FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
 );
 
+CREATE TABLE staff_category (
+    staff_category_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(255)
+);
+
 CREATE TABLE staff_type (
     staff_type_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description VARCHAR(255)
+    staff_category_id INT NOT NULL,
+    FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id)
 );
 
 CREATE TABLE experience_level (
@@ -64,8 +73,10 @@ CREATE TABLE staff (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     date_of_birth DATE NOT NULL,
-    staff_type_id INT NOT NULL,
+    staff_category_id INT NOT NULL,
+    staff_type_id INT,
     experience_level_id INT NOT NULL,
+    FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id),
     FOREIGN KEY (staff_type_id) REFERENCES staff_type(staff_type_id),
     FOREIGN KEY (experience_level_id) REFERENCES experience_level(experience_level_id)
 );
@@ -147,3 +158,67 @@ CREATE TRIGGER trg_check_staff_overlap
 BEFORE INSERT OR UPDATE ON event_staff
 FOR EACH ROW
 EXECUTE FUNCTION check_staff_event_overlap();
+
+
+-- USE IT AS CONSTRAINT TRIGGER, DEFERRABLE INITIALLY DEFERRED
+-- 1. Create the trigger function that enforces the minimum staff coverage
+CREATE OR REPLACE FUNCTION check_event_staff_coverage()
+RETURNS TRIGGER AS $$
+DECLARE
+    evt_id     INT;
+    cap        INT;
+    sec_req    INT;
+    sup_req    INT;
+    sec_count  INT;
+    sup_count  INT;
+BEGIN
+    -- Determine which event_id to check (NEW for insert/update, OLD for delete)
+    IF (TG_OP = 'DELETE') THEN
+        evt_id := OLD.event_id;
+    ELSE
+        evt_id := NEW.event_id;
+    END IF;
+
+    -- Fetch the stage capacity for that event
+    SELECT s.max_capacity
+      INTO cap
+    FROM event e
+    JOIN stage s ON e.stage_id = s.stage_id
+    WHERE e.event_id = evt_id;
+
+    -- Calculate required numbers (5% for security, 2% for support)
+    sec_req := CEIL(cap * 0.05)::INT;
+    sup_req := CEIL(cap * 0.02)::INT;
+
+    -- Count assigned security staff
+    SELECT COUNT(*) INTO sec_count
+    FROM event_staff es
+    JOIN staff st            ON es.staff_id = st.staff_id
+    JOIN staff_category sc   ON st.staff_category_id = sc.staff_category_id
+    WHERE es.event_id = evt_id
+      AND sc.name = 'Security';
+
+    -- Count assigned support staff
+    SELECT COUNT(*) INTO sup_count
+    FROM event_staff es
+    JOIN staff st            ON es.staff_id = st.staff_id
+    JOIN staff_category sc   ON st.staff_category_id = sc.staff_category_id
+    WHERE es.event_id = evt_id
+      AND sc.name = 'Support';
+
+    -- Enforce minimums
+    IF sec_count < sec_req THEN
+        RAISE EXCEPTION
+          'Event %: only % security staff assigned, but at least % required (5%% of capacity %)',
+          evt_id, sec_count, sec_req, cap;
+    END IF;
+    IF sup_count < sup_req THEN
+        RAISE EXCEPTION
+          'Event %: only % support staff assigned, but at least % required (2%% of capacity %)',
+          evt_id, sup_count, sup_req, cap;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+

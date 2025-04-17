@@ -46,6 +46,9 @@ INSERT INTO festival (name, start_date, end_date, location_id) VALUES
 ('Pulse Festival 2023', '2023-06-01', '2023-06-05', 14),
 ('Pulse Festival 2024', '2024-06-01', '2024-06-05', 15);
 
+INSERT INTO festival (name, start_date, end_date, location_id) VALUES
+('Pulse Festival2 2010', '2010-07-01', '2010-07-05', 16);
+
 INSERT INTO stage (name, description, max_capacity) VALUES
 ('Main Stage', 'Primary stage for headline performances', 5000),
 ('Secondary Stage', 'Supporting acts and mid-tier performers', 3000),
@@ -82,6 +85,15 @@ INSERT INTO stage (name, description, max_capacity) VALUES
 ('Opera House', 'Elegant venue for opera performances', 2000),
 ('B-Boy Arena', 'Space for breakdancing and street performance battles', 1200),
 ('Electronic Lounge', 'Modern setting for electronic and dance music', 2200);
+
+--Lower max_capacity
+UPDATE stage
+SET max_capacity = CASE
+    WHEN max_capacity > 400 THEN 400
+    WHEN max_capacity < 100 THEN 100
+    ELSE max_capacity
+END;
+
 
 INSERT INTO equipment (name, description) VALUES
 ('Speakers', 'High quality audio speakers for clear sound projection.'),
@@ -122,3 +134,109 @@ INSERT INTO experience_level (name, level) VALUES
 ('Intermediate', 3),
 ('Experienced', 4),
 ('Highly Experienced', 5);
+
+INSERT INTO staff_category (name, description) VALUES
+('Technical', 'Technical personnel'),
+('Security', 'Security personnel'),
+('Support', 'Auxiliary/support personnel');
+
+INSERT INTO staff_type (name, description, staff_category_id) VALUES
+('Sound Engineer', 'Handles setup and operation of audio systems', 1),
+('Lighting Technician', 'Designs and controls stage lighting', 1),
+('Mixing Engineer', 'Manages live sound mixing during performances', 1),
+('Rigger', 'Installs and secures lighting/sound rigging', 1),
+('Video Technician', 'Operates projection and video feeds', 1),
+('Security Guard', 'Monitors venue security and access control', 2),
+('Crowd Control Officer', 'Manages audience flow and safety', 2),
+('Perimeter Guard', 'Secures the event perimeter', 2),
+('Usher', 'Guides attendees to their seats/areas', 3),
+('Cleaner', 'Maintains cleanliness before, during, and after events', 3),
+('Equipment Handler', 'Loads, unloads, and transports gear', 3),
+('Parking Attendant', 'Directs vehicle parking and traffic', 3);
+
+INSERT INTO staff (first_name, last_name, date_of_birth, staff_category_id, staff_type_id, experience_level_id) VALUES
+('John',    'Doe',       '1985-04-10', 1,  1, 4),
+('Alice',   'Smith',     '1990-06-20', 1,  2, 3),
+('Bob',     'Johnson',   '1978-11-05', 2,  6, 5),
+('Maria',   'Garcia',    '1988-12-01', 2,  7, 4),
+('David',   'Lee',       '1995-02-14', 3,  9, 2),
+('Laura',   'Brown',     '1980-09-30', 3, 10, 3),
+('Mike',    'Davis',     '1982-07-22', 3, 11, 5),
+('Sarah',   'Wilson',    '1992-03-15', 1,  3, 3),
+('Tom',     'Martinez',  '1975-01-20', 1,  4, 5),
+('Emma',    'Thompson',  '1998-08-10', 3, 12, 1),
+('Chris',   'Evans',     '1987-06-13', 1, NULL, 2),
+('Nina',    'Adams',     '1983-05-02', 2, NULL, 4),
+('Laura',    'Chen',      '1991-04-12', 1,  3, 2),
+('Daniel',   'Young',     '1984-07-15', 1,  4, 5),
+('Oliver',   'Scott',     '1979-12-11', 1,  5, 4),
+('Sophia',   'Turner',    '1993-11-23', 2,  6, 3),
+('Ethan',    'Walker',    '1986-02-19', 2,  7, 4),
+('Isabella', 'Harris',    '1990-05-25', 2,  8, 2),
+('Noah',     'King',      '1999-09-09', 3,  9, 1),
+('Mia',      'Wright',    '1988-10-30', 3, 10, 3),
+('Ava',      'Martin',    '1992-03-08', 3, NULL, 2),
+('Liam',     'Perez',     '1995-08-14', 2, NULL, 3);
+
+INSERT INTO event (festival_id, name, start_timestamp, end_timestamp, stage_id) VALUES
+-- Festival 1 (2010)
+(1,  'Opening Ceremony',       '2010-06-01 10:00:00', '2010-06-01 11:30:00', 1),
+(1,  'Rock Legends',           '2010-06-01 12:00:00', '2010-06-01 14:00:00', 1),
+(1,  'Acoustic Session',       '2010-06-01 10:00:00', '2010-06-01 11:00:00', 2),
+-- Festival 2 (2011)
+(2,  'Jazz Morning',           '2011-06-01 09:00:00', '2011-06-01 10:30:00', 6),
+(2,  'Folk Ensemble',          '2011-06-01 11:00:00', '2011-06-01 12:30:00', 6),
+(2,  'Headline Pop',           '2011-06-02 20:00:00', '2011-06-02 22:00:00', 1),
+-- Festival 3 (2012)
+(3,  'Electronic Beats',       '2012-06-01 18:00:00', '2012-06-01 20:00:00', 5),
+(3,  'Dance Night',            '2012-06-01 20:30:00', '2012-06-01 23:00:00', 5),
+-- Festival 4 (2013)
+(4,  'Classical Overture',     '2013-06-01 17:00:00', '2013-06-01 19:00:00', 10),
+(4,  'Symphony No. 5',         '2013-06-02 19:30:00', '2013-06-02 22:00:00', 10),
+-- Festival 5 (2014)
+(5,  'Indie Showcase',         '2014-06-03 14:00:00', '2014-06-03 16:00:00', 8),
+(5,  'Alternative Rock',       '2014-06-03 16:30:00', '2014-06-03 18:30:00', 8),
+-- Festival 6 (2015)
+(6,  'Hip-Hop Cypher',         '2015-06-01 22:00:00', '2015-06-02 00:00:00', 9),
+-- Festival 7 (2016)
+(7,  'Metal Mania',            '2016-06-02 18:00:00', '2016-06-02 20:00:00', 7),
+(7,  'Drum Solo',              '2016-06-02 20:30:00', '2016-06-02 21:30:00', 7),
+-- Festival 8 (2017)
+(8,  'Reggae Roots',           '2017-06-01 12:00:00', '2017-06-01 14:00:00', 18),
+-- Festival 9 (2018)
+(9,  'Latin Dance',            '2018-06-04 19:00:00', '2018-06-04 21:00:00', 20),
+-- Festival 10 (2019)
+(10, 'Blues Evening',          '2019-06-05 18:00:00', '2019-06-05 20:00:00', 22),
+-- Festival 11 (2020)
+(11, 'Ambient Chill',          '2020-06-02 15:00:00', '2020-06-02 17:00:00', 29),
+-- Festival 12 (2021)
+(12, 'World Music Fusion',     '2021-06-03 16:00:00', '2021-06-03 18:00:00', 28),
+-- Festival 13 (2022)
+(13, 'K-Pop Extravaganza',     '2022-06-01 20:00:00', '2022-06-01 22:30:00', 26),
+-- Festival 14 (2023)
+(14, 'Electronic Dome Rave',   '2023-06-02 21:00:00', '2023-06-03 00:00:00', 17),
+-- Festival 15 (2024)
+(15, 'Closing Fireworks',      '2024-06-05 22:00:00', '2024-06-05 23:00:00', 1);
+
+-- Insert 200 new security staff (staff_category_id = 2, staff_type_id cycles through 6–8)
+INSERT INTO staff (first_name, last_name, date_of_birth, staff_category_id, staff_type_id, experience_level_id)
+SELECT
+  'Sec' || i AS first_name,
+  'Guard' || i AS last_name,
+  DATE '1985-01-01' AS date_of_birth,
+  2 AS staff_category_id,
+  6 + ((i - 1) % 3) AS staff_type_id,      -- cycles through 6,7,8
+  1 + ((i - 1) % 5) AS experience_level_id -- cycles through 1–5
+FROM generate_series(1,200) AS s(i);
+
+-- Insert 100 new support staff (staff_category_id = 3, staff_type_id cycles through 9–12)
+INSERT INTO staff (first_name, last_name, date_of_birth, staff_category_id, staff_type_id, experience_level_id)
+SELECT
+  'Sup' || i AS first_name,
+  'Staff' || i AS last_name,
+  DATE '1990-01-01' AS date_of_birth,
+  3 AS staff_category_id,
+  9 + ((i - 1) % 4) AS staff_type_id,      -- cycles through 9–12
+  1 + ((i - 1) % 5) AS experience_level_id -- cycles through 1–5
+FROM generate_series(1,100) AS s(i);
+
