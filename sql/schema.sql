@@ -355,9 +355,9 @@ BEGIN
           artist_id = NEW.artist_id OR
           band_id = NEW.band_id OR
           EXISTS (
-              SELECT 1 FROM artist_band
-              WHERE artist_band.artist_id = NEW.artist_id
-              AND artist_band.band_id = performance.band_id
+              SELECT 1 FROM band_membership
+              WHERE band_membership.artist_id = NEW.artist_id
+              AND band_membership.band_id = performance.band_id
           ) -- Ensure artists' bands aren't double-booked
       );
     IF overlapping_count > 0 THEN
@@ -485,13 +485,12 @@ CREATE INDEX idx_band_name ON band USING btree (name);
 CREATE INDEX idx_band_genre ON band USING btree (genre_id);
 CREATE INDEX idx_band_subgenre ON band USING btree (subgenre_id);
 CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
-CREATE UNIQUE INDEX idx_stage_name ON band USING btree (stage_name);
 CREATE INDEX idx_performance_event ON performance USING btree (event_id);
 CREATE INDEX idx_performance_stage ON performance USING btree (stage_id);
 CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
 CREATE INDEX idx_performance_conflict ON performance USING btree (artist_id, band_id, stage_id) WHERE artist_id IS NOT NULL OR band_id IS NOT NULL;
-CREATE INDEX idx_artist_band_artist ON artist_band USING btree (artist_id);
-CREATE INDEX idx_artist_band_band ON artist_band USING btree (band_id);
+CREATE INDEX idx_band_membership_artist ON band_membership USING btree (artist_id);
+CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
 CREATE INDEX idx_genre_name ON genre USING btree (name);
 CREATE INDEX idx_subgenre_name ON subgenre USING btree (name);
 CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
@@ -499,6 +498,6 @@ CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
 
 
 --Add control over the duplicates for
-ALTER TABLE artist_band ADD CONSTRAINT unique_artist_band UNIQUE (artist_id, band_id);
+ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
 ALTER TABLE performance ADD CONSTRAINT unique_performance_event_stage UNIQUE (event_id, stage_id, start_time);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
