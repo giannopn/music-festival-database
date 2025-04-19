@@ -46,9 +46,6 @@ INSERT INTO festival (name, start_date, end_date, location_id) VALUES
 ('Pulse Festival 2023', '2023-06-01', '2023-06-05', 14),
 ('Pulse Festival 2024', '2024-06-01', '2024-06-05', 15);
 
-INSERT INTO festival (name, start_date, end_date, location_id) VALUES
-('Pulse Festival2 2010', '2010-07-01', '2010-07-05', 16);
-
 INSERT INTO stage (name, description, max_capacity) VALUES
 ('Main Stage', 'Primary stage for headline performances', 5000),
 ('Secondary Stage', 'Supporting acts and mid-tier performers', 3000),
