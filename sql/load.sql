@@ -508,3 +508,87 @@ INSERT INTO performance (performance_id, name, event_id, artist_id, performance_
 (25, 'User-friendly intangible encryption', 3, 13, 'Live', '14:00:00', '14:45:00', 45, 3),
 (27, 'Total content-based encryption', 3, 7, 'Live', '14:00:00', '14:45:00', 45, 4),
 (29, 'Optimized cohesive methodology', 3, 30, 'Live', '14:00:00', '14:45:00', 45, 5);
+
+INSERT INTO ticket_category (name) VALUES
+('General'),
+('VIP'),
+('Backstage');
+
+INSERT INTO payment_method (name) VALUES
+('Credit Card'),
+('Debit Card'),
+('Bank Account');
+
+INSERT INTO visitor (first_name, last_name, contact_info, date_of_birth)
+SELECT
+  fnames[(g.i - 1) % 15 + 1],
+  lnames[(g.i - 1) % 15 + 1],
+  LOWER(fnames[(g.i - 1) % 15 + 1] || '.' || lnames[(g.i - 1) % 15 + 1] || g.i || '@example.com'),
+  (DATE '1970-01-01' + ((g.i * 365) % 20000) * INTERVAL '1 day')::date
+FROM generate_series(1,200) AS g(i),
+LATERAL (
+  SELECT
+    ARRAY['John','Alice','Robert','Maria','David','Laura','Michael','Sarah','Thomas','Emma','Oliver','Sophia','Ethan','Isabella','Liam'] AS fnames,
+    ARRAY['Doe','Johnson','Smith','Garcia','Lee','Brown','Davis','Wilson','Martinez','Thompson','Anderson','Taylor','Moore','Jackson','White'] AS lnames
+) AS names;
+
+INSERT INTO ticket (
+    event_id,
+    visitor_id,
+    purchase_date,
+    ticket_category_id,
+    cost,
+    payment_method_id,
+    ean13_code
+)
+SELECT
+    ((gs - 1) % 23) + 1 AS event_id,
+    CASE
+        WHEN gs % 5 = 0 THEN NULL
+        ELSE ((gs - 1) % 200) + 1
+    END AS visitor_id,
+    CASE
+        WHEN gs % 5 = 0 THEN NULL
+        ELSE (DATE '2025-04-01' - ((gs % 30) * INTERVAL '1 day'))
+    END AS purchase_date,
+    ((gs - 1) % 3) + 1 AS ticket_category_id,
+    CASE ((gs - 1) % 3) + 1
+        WHEN 1 THEN 50.00
+        WHEN 2 THEN 100.00
+        ELSE 150.00
+    END AS cost,
+    CASE
+        WHEN gs % 5 = 0 THEN NULL
+        ELSE ((gs - 1) % 3) + 1
+    END AS payment_method_id,
+    (1000000000000 + gs)::TEXT AS ean13_code
+FROM generate_series(1,300) AS s(gs);
+
+INSERT INTO likert_value (likert_value_id, label) VALUES
+  (1, 'Strongly Disagree'),
+  (2, 'Disagree'),
+  (3, 'Neutral'),
+  (4, 'Agree'),
+  (5, 'Strongly Agree');
+
+INSERT INTO performance_rating (
+  performance_id,
+  visitor_id,
+  artist_performance_rating,
+  sound_lighting_rating,
+  stage_presence_rating,
+  organization_rating,
+  overall_impression_rating
+) VALUES
+-- full rating
+(1,  1,  5, 4, 5, 5, 5),
+(2,  2,  4, 4, 4, 4, 4),
+(3,  3,  3, 3, 3, 3, 3),
+(4,  4,  5, 5, 4, 5, 5),
+(5,  5,  2, 2, 3, 2, 2),
+-- partial ratings with some nulls
+(6,  6,  NULL, 4, 5, 5, 5),
+(7,  7,  5, NULL, 5, 4, 4),
+(8,  8,  3, 3, NULL, NULL, 3),
+(9,  9,  4, 4, 4, 4, NULL),
+(10, 10, NULL, NULL, NULL, NULL, 5);

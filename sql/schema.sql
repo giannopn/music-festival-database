@@ -511,3 +511,55 @@ CREATE INDEX idx_band_genre_subgenre ON band_genre (subgenre_id);
 ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
 ALTER TABLE performance ADD CONSTRAINT unique_performance_event_stage UNIQUE (event_id, stage_id, start_time);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
+
+
+CREATE TABLE ticket_category (
+    ticket_category_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE payment_method (
+    payment_method_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE visitor (
+    visitor_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    contact_info VARCHAR(255),
+    date_of_birth DATE NOT NULL
+);
+
+CREATE TABLE ticket (
+    ticket_id SERIAL PRIMARY KEY,
+    event_id INT NOT NULL REFERENCES event(event_id),
+    visitor_id INT REFERENCES visitor(visitor_id),
+    purchase_date DATE,
+    ticket_category_id INT NOT NULL REFERENCES ticket_category(ticket_category_id),
+    cost NUMERIC(10,2) NOT NULL,
+    payment_method_id INT REFERENCES payment_method(payment_method_id),
+    ean13_code CHAR(13) NOT NULL,
+    UNIQUE (ean13_code),
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (visitor_id, event_id)
+);
+
+CREATE TABLE likert_value (
+    likert_value_id SERIAL PRIMARY KEY,
+    label VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE performance_rating (
+    rating_id                     SERIAL PRIMARY KEY,
+    performance_id                INT   NOT NULL REFERENCES event(event_id),
+    visitor_id                    INT   NOT NULL REFERENCES visitor(visitor_id),
+    rating_date                   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    artist_performance_rating     INT   REFERENCES likert_value(likert_value_id),
+    sound_lighting_rating         INT   REFERENCES likert_value(likert_value_id),
+    stage_presence_rating         INT   REFERENCES likert_value(likert_value_id),
+    organization_rating           INT   REFERENCES likert_value(likert_value_id),
+    overall_impression_rating     INT   REFERENCES likert_value(likert_value_id),
+    UNIQUE (performance_id, visitor_id)
+);
+
