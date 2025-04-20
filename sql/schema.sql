@@ -251,6 +251,7 @@ CREATE SEQUENCE band_id_seq
     NO MINVALUE
     CACHE 1;
 
+
 --sources
 --date_of_birth: https://dev.to/insolita/postgres-and-birthday-dates-3ji4 and age https://stackoverflow.com/questions/40072914/postgresql-age-calculation-from-date-type
 --website https://stackoverflow.com/questions/41633436/datatype-for-a-url-in-postgresql
@@ -260,24 +261,36 @@ CREATE TABLE artist(
   real_name varchar(255),
   stage_name varchar(255) NOT NULL,
   date_of_birth date NOT NULL,
-  genre_id integer NOT NULL,
-  subgenre_id integer,
   website text,
-  instagram_profile varchar(255) UNIQUE,
-  FOREIGN KEY (genre_id) references genre (genre_id),
-  FOREIGN KEY (subgenre_id) references subgenre (subgenre_id)
+  instagram_profile varchar(255) UNIQUE
 );
 
 CREATE TABLE band(
   band_id integer DEFAULT nextval('band_id_seq'::regclass) PRIMARY KEY,
   name varchar(255),
   date_created date NOT NULL,
-  genre_id integer NOT NULL,
-  subgenre_id integer,
   website text,
-  instagram_profile varchar(255) UNIQUE,
-  FOREIGN KEY (genre_id) references genre (genre_id),
-  FOREIGN KEY (subgenre_id) references subgenre (subgenre_id)
+  instagram_profile varchar(255) UNIQUE
+);
+
+CREATE TABLE artist_genre (
+    artist_id INTEGER NOT NULL,
+    genre_id INTEGER NOT NULL,
+    subgenre_id INTEGER,
+    PRIMARY KEY (artist_id, genre_id, subgenre_id),
+    FOREIGN KEY (artist_id) REFERENCES artist (artist_id) ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES genre (genre_id),
+    FOREIGN KEY (subgenre_id) REFERENCES subgenre (subgenre_id)
+);
+
+CREATE TABLE band_genre (
+    band_id INTEGER NOT NULL,
+    genre_id INTEGER NOT NULL,
+    subgenre_id INTEGER,
+    PRIMARY KEY (band_id, genre_id, subgenre_id),
+    FOREIGN KEY (band_id) REFERENCES band (band_id) ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES genre (genre_id),
+    FOREIGN KEY (subgenre_id) REFERENCES subgenre (subgenre_id)
 );
 
 CREATE TABLE band_membership (
@@ -324,6 +337,55 @@ CREATE TABLE performance (
 );
 
 
+CREATE OR REPLACE FUNCTION validate_artist_genre_subgenre()
+RETURNS TRIGGER AS $$
+DECLARE
+    valid_match INTEGER;
+BEGIN
+    IF NEW.subgenre_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO valid_match
+        FROM subgenre
+        WHERE subgenre_id = NEW.subgenre_id
+          AND genre_id = NEW.genre_id;
+
+        IF valid_match = 0 THEN
+            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in artist_genre.', NEW.subgenre_id, NEW.genre_id;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_artist_genre
+BEFORE INSERT OR UPDATE ON artist_genre
+FOR EACH ROW
+EXECUTE FUNCTION validate_artist_genre_subgenre();
+
+CREATE OR REPLACE FUNCTION validate_band_genre_subgenre()
+RETURNS TRIGGER AS $$
+DECLARE
+    valid_match INTEGER;
+BEGIN
+    IF NEW.subgenre_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO valid_match
+        FROM subgenre
+        WHERE subgenre_id = NEW.subgenre_id
+          AND genre_id = NEW.genre_id;
+
+        IF valid_match = 0 THEN
+            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in band_genre.', NEW.subgenre_id, NEW.genre_id;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_band_genre
+BEFORE INSERT OR UPDATE ON band_genre
+FOR EACH ROW
+EXECUTE FUNCTION validate_band_genre_subgenre();
+
+
 CREATE OR REPLACE FUNCTION prevent_performance_deletion()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -355,9 +417,9 @@ BEGIN
           artist_id = NEW.artist_id OR
           band_id = NEW.band_id OR
           EXISTS (
-              SELECT 1 FROM artist_band
-              WHERE artist_band.artist_id = NEW.artist_id
-              AND artist_band.band_id = performance.band_id
+              SELECT 1 FROM band_membership
+              WHERE band_membership.artist_id = NEW.artist_id
+              AND band_membership.band_id = performance.band_id
           ) -- Ensure artists' bands aren't double-booked
       );
     IF overlapping_count > 0 THEN
@@ -422,83 +484,30 @@ EXECUTE FUNCTION enforce_break_between_performances();
 
 --
 
-CREATE OR REPLACE FUNCTION check_subgenre_validity()
-RETURNS TRIGGER AS $$
-DECLARE
-    genre_match INT;
-BEGIN
-    -- If subgenre_id is provided, check if it belongs to the same genre_id
-    IF NEW.subgenre_id IS NOT NULL THEN
-        SELECT COUNT(*) INTO genre_match
-        FROM subgenre
-        WHERE subgenre_id = NEW.subgenre_id AND genre_id = NEW.genre_id;
-
-        IF genre_match = 0 THEN
-            RAISE EXCEPTION 'Subgenre does not belong to the specified genre!';
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER enforce_subgenre_genre_match
-BEFORE INSERT OR UPDATE ON artist
-FOR EACH ROW
-EXECUTE FUNCTION check_subgenre_validity();
-
-
-
-
-CREATE OR REPLACE FUNCTION check_band_subgenre_validity()
-RETURNS TRIGGER AS $$
-DECLARE
-    genre_match INT;
-BEGIN
-    -- If subgenre_id is provided, check if it belongs to the same genre_id
-    IF NEW.subgenre_id IS NOT NULL THEN
-        SELECT COUNT(*) INTO genre_match
-        FROM subgenre
-        WHERE subgenre_id = NEW.subgenre_id AND genre_id = NEW.genre_id;
-
-        IF genre_match = 0 THEN
-            RAISE EXCEPTION 'Subgenre does not belong to the specified genre!';
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER enforce_band_subgenre_match
-BEFORE INSERT OR UPDATE ON band
-FOR EACH ROW
-EXECUTE FUNCTION check_band_subgenre_validity();
-
-
 
 CREATE INDEX idx_artist_stage_name ON artist USING btree (stage_name);
-CREATE INDEX idx_artist_genre ON artist USING btree (genre_id);
-CREATE INDEX idx_artist_subgenre ON artist USING btree (subgenre_id);
 CREATE UNIQUE INDEX idx_artist_instagram ON artist USING btree (instagram_profile);
 CREATE INDEX idx_band_name ON band USING btree (name);
-CREATE INDEX idx_band_genre ON band USING btree (genre_id);
-CREATE INDEX idx_band_subgenre ON band USING btree (subgenre_id);
 CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
-CREATE UNIQUE INDEX idx_stage_name ON band USING btree (stage_name);
 CREATE INDEX idx_performance_event ON performance USING btree (event_id);
 CREATE INDEX idx_performance_stage ON performance USING btree (stage_id);
 CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
 CREATE INDEX idx_performance_conflict ON performance USING btree (artist_id, band_id, stage_id) WHERE artist_id IS NOT NULL OR band_id IS NOT NULL;
-CREATE INDEX idx_artist_band_artist ON artist_band USING btree (artist_id);
-CREATE INDEX idx_artist_band_band ON artist_band USING btree (band_id);
+CREATE INDEX idx_band_membership_artist ON band_membership USING btree (artist_id);
+CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
 CREATE INDEX idx_genre_name ON genre USING btree (name);
 CREATE INDEX idx_subgenre_name ON subgenre USING btree (name);
 CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
+CREATE INDEX idx_artist_genre_artist ON artist_genre (artist_id);
+CREATE INDEX idx_artist_genre_genre ON artist_genre (genre_id);
+CREATE INDEX idx_artist_genre_subgenre ON artist_genre (subgenre_id);
+CREATE INDEX idx_band_genre_band ON band_genre (band_id);
+CREATE INDEX idx_band_genre_genre ON band_genre (genre_id);
+CREATE INDEX idx_band_genre_subgenre ON band_genre (subgenre_id);
 
 
 
 --Add control over the duplicates for
-ALTER TABLE artist_band ADD CONSTRAINT unique_artist_band UNIQUE (artist_id, band_id);
+ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
 ALTER TABLE performance ADD CONSTRAINT unique_performance_event_stage UNIQUE (event_id, stage_id, start_time);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
