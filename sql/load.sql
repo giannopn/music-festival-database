@@ -47,50 +47,42 @@ INSERT INTO festival (name, start_date, end_date, location_id) VALUES
 ('Pulse Festival 2024', '2024-06-01', '2024-06-05', 15);
 
 INSERT INTO stage (name, description, max_capacity) VALUES
-('Main Stage', 'Primary stage for headline performances', 5000),
-('Secondary Stage', 'Supporting acts and mid-tier performers', 3000),
-('Outdoor Arena', 'Open-air venue for large events', 6000),
-('Acoustic Stage', 'Intimate setting for acoustic sessions', 1500),
-('Electric Stage', 'Venue dedicated to electronic music acts', 2500),
-('Jazz Corner', 'Cozy stage for jazz performances', 800),
-('Rock Arena', 'Large venue for rock concerts', 4000),
-('Indie Stage', 'Stage focused on indie and alternative music', 1200),
-('Hip-Hop Stage', 'Dedicated to hip-hop performances', 2000),
-('Classical Hall', 'Indoor setting for classical concerts', 1000),
-('Dance Floor', 'High-energy stage for DJ sets and dance parties', 3500),
-('Experimental Stage', 'Platform for avant-garde and experimental acts', 600),
-('Fusion Stage', 'Mixing genres in a creative environment', 2200),
-('Chill Out Lounge', 'Relaxed venue for ambient and chill music', 500),
-('Pop Arena', 'Large indoor stage for pop music events', 4500),
-('Folk Stage', 'Showcasing folk and cultural performances', 900),
-('Electronic Dome', 'Enclosed dome for electronic music festivals', 3000),
-('Reggae Garden', 'Outdoor venue for reggae and world music', 1100),
-('Metal Pit', 'Intense stage for metal band performances', 3500),
-('Salsa Venue', 'Dedicated to salsa and Latin music events', 1300),
-('Blues Bar', 'Cozy spot for blues performances', 700),
-('Country Corner', 'Venue for country music and related acts', 1000),
-('Soul Stage', 'Stage for soulful and R&B performances', 1800),
-('Funk Floor', 'Energetic space for funk music', 2000),
-('Rave Arena', 'High-energy venue for rave and EDM events', 4000),
-('K-Pop Stage', 'Stage dedicated to K-Pop performances', 2500),
-('Reggaeton Arena', 'Venue for reggaeton and urban music events', 2300),
-('Ambient Area', 'Quiet stage for ambient music sessions', 600),
-('World Music Stage', 'International music genres under one roof', 1400),
-('Comedy Club', 'Intimate venue for stand-up comedy shows', 800),
-('Poetry Corner', 'Cozy stage for spoken word and poetry readings', 300),
-('Theater Stage', 'Traditional stage for theatrical performances', 1500),
-('Opera House', 'Elegant venue for opera performances', 2000),
-('B-Boy Arena', 'Space for breakdancing and street performance battles', 1200),
-('Electronic Lounge', 'Modern setting for electronic and dance music', 2200);
-
---Lower max_capacity
-UPDATE stage
-SET max_capacity = CASE
-    WHEN max_capacity > 400 THEN 400
-    WHEN max_capacity < 100 THEN 100
-    ELSE max_capacity
-END;
-
+('Main Stage', 'Primary stage for headline performances', 500),
+('Secondary Stage', 'Supporting acts and mid-tier performers', 300),
+('Outdoor Arena', 'Open-air venue for large events', 600),
+('Acoustic Stage', 'Intimate setting for acoustic sessions', 150),
+('Electric Stage', 'Venue dedicated to electronic music acts', 250),
+('Jazz Corner', 'Cozy stage for jazz performances', 80),
+('Rock Arena', 'Large venue for rock concerts', 400),
+('Indie Stage', 'Stage focused on indie and alternative music', 120),
+('Hip-Hop Stage', 'Dedicated to hip-hop performances', 200),
+('Classical Hall', 'Indoor setting for classical concerts', 100),
+('Dance Floor', 'High-energy stage for DJ sets and dance parties', 350),
+('Experimental Stage', 'Platform for avant-garde and experimental acts', 60),
+('Fusion Stage', 'Mixing genres in a creative environment', 220),
+('Chill Out Lounge', 'Relaxed venue for ambient and chill music', 50),
+('Pop Arena', 'Large indoor stage for pop music events', 450),
+('Folk Stage', 'Showcasing folk and cultural performances', 90),
+('Electronic Dome', 'Enclosed dome for electronic music festivals', 300),
+('Reggae Garden', 'Outdoor venue for reggae and world music', 110),
+('Metal Pit', 'Intense stage for metal band performances', 350),
+('Salsa Venue', 'Dedicated to salsa and Latin music events', 130),
+('Blues Bar', 'Cozy spot for blues performances', 70),
+('Country Corner', 'Venue for country music and related acts', 100),
+('Soul Stage', 'Stage for soulful and R&B performances', 180),
+('Funk Floor', 'Energetic space for funk music', 200),
+('Rave Arena', 'High-energy venue for rave and EDM events', 400),
+('K-Pop Stage', 'Stage dedicated to K-Pop performances', 250),
+('Reggaeton Arena', 'Venue for reggaeton and urban music events', 230),
+('Ambient Area', 'Quiet stage for ambient music sessions', 60),
+('World Music Stage', 'International music genres under one roof', 140),
+('Comedy Club', 'Intimate venue for stand-up comedy shows', 80),
+('Poetry Corner', 'Cozy stage for spoken word and poetry readings', 30),
+('Theater Stage', 'Traditional stage for theatrical performances', 150),
+('Opera House', 'Elegant venue for opera performances', 200),
+('B-Boy Arena', 'Space for breakdancing and street performance battles', 120),
+('Electronic Lounge', 'Modern setting for electronic and dance music', 220),
+('Break Battle Zone', 'Arena for breakdancers and urban showcases', 100);
 
 INSERT INTO equipment (name, description) VALUES
 ('Speakers', 'High quality audio speakers for clear sound projection.'),
@@ -213,7 +205,8 @@ INSERT INTO event (festival_id, name, start_timestamp, end_timestamp, stage_id) 
 -- Festival 14 (2023)
 (14, 'Electronic Dome Rave',   '2023-06-02 21:00:00', '2023-06-03 00:00:00', 17),
 -- Festival 15 (2024)
-(15, 'Closing Fireworks',      '2024-06-05 22:00:00', '2024-06-05 23:00:00', 1);
+(15, 'Closing Fireworks',      '2024-06-05 22:00:00', '2024-06-05 23:00:00', 1),
+(15, 'Future',                 '2024-06-05 22:00:00', '2024-06-05 23:00:00', 36);
 
 -- Insert 200 new security staff (staff_category_id = 2, staff_type_id cycles through 6–8)
 INSERT INTO staff (first_name, last_name, date_of_birth, staff_category_id, staff_type_id, experience_level_id)
@@ -563,6 +556,24 @@ SELECT
     END AS payment_method_id,
     (1000000000000 + gs)::TEXT AS ean13_code
 FROM generate_series(1,300) AS s(gs);
+
+INSERT INTO ticket (
+    event_id,
+    visitor_id,
+    purchase_date,
+    ticket_category_id,
+    cost,
+    payment_method_id,
+    ean13_code
+) VALUES
+(25, 1, NOW(), 1, 15, 1, '1234567890123'),
+(25, 2, NOW(), 1, 15, 1, '1234567890124'),
+(25, 3, NOW(), 1, 15, 1, '1234567890125'),
+(25, 4, NOW(), 1, 15, 1, '1234567890126'),
+(25, 5, NOW(), 1, 15, 1, '1234567890127'),
+(25, 6, NOW(), 1, 15, 1, '1234567890128'),
+(25, 7, NOW(), 1, 15, 1, '1234567890129');
+
 
 INSERT INTO likert_value (likert_value_id, label) VALUES
   (1, 'Strongly Disagree'),

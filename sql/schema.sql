@@ -51,13 +51,13 @@ CREATE TABLE stage_equipment (
 CREATE TABLE staff_category (
     staff_category_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description VARCHAR(255)
+    description TEXT
 );
 
 CREATE TABLE staff_type (
     staff_type_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    description VARCHAR(255),
+    description TEXT,
     staff_category_id INT NOT NULL,
     FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id)
 );
@@ -93,6 +93,7 @@ CREATE TABLE event (
     FOREIGN KEY (stage_id) REFERENCES stage(stage_id)
 );
 
+-- Check for event overlap on the same stage
 CREATE OR REPLACE FUNCTION check_event_overlap_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -544,6 +545,105 @@ CREATE TABLE ticket (
     used BOOLEAN NOT NULL DEFAULT FALSE,
     UNIQUE (visitor_id, event_id)
 );
+
+
+-- 1. Create trigger function to enforce capacity for sold tickets
+CREATE OR REPLACE FUNCTION check_ticket_capacity()
+RETURNS TRIGGER AS $$
+DECLARE
+    sold_count INT;
+    capacity   INT;
+BEGIN
+    -- Lookup the stage capacity for this event
+    SELECT s.max_capacity
+      INTO capacity
+    FROM event e
+    JOIN stage s ON e.stage_id = s.stage_id
+    WHERE e.event_id = NEW.event_id;
+
+    -- Count existing sold tickets for the event, excluding this row if it exists
+    SELECT COUNT(*)
+      INTO sold_count
+    FROM ticket t
+    WHERE t.event_id = NEW.event_id
+      AND t.visitor_id IS NOT NULL
+      AND (TG_OP = 'INSERT' OR t.ticket_id <> NEW.ticket_id);
+
+    -- If this new/updated ticket is sold, include it in the tally
+    IF NEW.visitor_id IS NOT NULL THEN
+        sold_count := sold_count + 1;
+    END IF;
+
+    -- Enforce: sold_count must not exceed capacity
+    IF sold_count > capacity THEN
+        RAISE EXCEPTION
+          'Cannot sell % tickets for event %, capacity is %.',
+          sold_count, NEW.event_id, capacity;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2. Attach the trigger to run before each insert or update on ticket
+CREATE TRIGGER trg_check_ticket_capacity
+BEFORE INSERT OR UPDATE ON ticket
+FOR EACH ROW
+EXECUTE FUNCTION check_ticket_capacity();
+
+
+-- Enforce VIP tickets to be 10% of max_capacity
+CREATE OR REPLACE FUNCTION enforce_vip_ticket_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+    capacity  INT;
+    vip_limit INT;
+    vip_count INT;
+BEGIN
+    -- Only enforce for VIP tickets (category_id = 2)
+    IF NEW.ticket_category_id <> 2 THEN
+        RETURN NEW;
+    END IF;
+
+    -- A. Fetch stage capacity for this event
+    SELECT s.max_capacity
+      INTO capacity
+    FROM event e
+    JOIN stage s ON e.stage_id = s.stage_id
+    WHERE e.event_id = NEW.event_id;
+
+    -- B. Count existing VIP tickets for this event (unsold + sold, exclude self on UPDATE)
+    SELECT COUNT(*)
+      INTO vip_count
+    FROM ticket t
+    WHERE t.event_id            = NEW.event_id
+      AND t.ticket_category_id = 2
+      AND (TG_OP = 'INSERT' OR t.ticket_id <> NEW.ticket_id);
+
+    -- C. Include the new/updated ticket
+    vip_count := vip_count + 1;
+
+    -- D. Compute 10% limit (ceiling)
+    vip_limit := CEIL(capacity * 0.10);
+
+    -- E. Enforce
+    IF vip_count > vip_limit THEN
+        RAISE EXCEPTION
+          'Cannot have % VIP tickets for event %: limit is % (10%% of %).',
+          vip_count, NEW.event_id, vip_limit, capacity;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_vip_limit ON ticket;
+
+CREATE TRIGGER trg_check_vip_limit
+BEFORE INSERT OR UPDATE ON ticket
+FOR EACH ROW
+EXECUTE FUNCTION enforce_vip_ticket_limit();
+
 
 CREATE TABLE likert_value (
     likert_value_id SERIAL PRIMARY KEY,
