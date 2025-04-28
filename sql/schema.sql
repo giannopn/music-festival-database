@@ -259,8 +259,8 @@ CREATE SEQUENCE band_id_seq
 --insta https://www.geeksforgeeks.org/how-to-design-a-database-for-instagram/
 CREATE TABLE artist(
   artist_id integer DEFAULT nextval('artist_id_seq'::regclass) PRIMARY KEY,
-  real_name varchar(255),
-  stage_name varchar(255) NOT NULL,
+  real_name varchar(255) NOT NULL,
+  stage_name varchar(255),
   date_of_birth date NOT NULL,
   website text,
   instagram_profile varchar(255) UNIQUE
