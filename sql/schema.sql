@@ -390,8 +390,10 @@ EXECUTE FUNCTION validate_band_genre_subgenre();
 CREATE OR REPLACE FUNCTION prevent_performance_deletion()
 RETURNS TRIGGER AS $$
 BEGIN
+  IF TRUE THEN
     RAISE EXCEPTION 'Performance cannot be deleted!';
-    RETURN NULL;
+  END IF;
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
