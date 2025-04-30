@@ -401,7 +401,7 @@ FOR EACH ROW
 EXECUTE FUNCTION prevent_performance_deletion();
 
 
-
+-- Check if artist/band perform on the same time
 CREATE OR REPLACE FUNCTION prevent_simultaneous_performances()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -443,7 +443,7 @@ EXECUTE FUNCTION prevent_simultaneous_performances();
 
 
 
-
+/*
 --At least 5 minutes and at most 30 minutes break between two consecutive performances.
 -- The system checks for the latest performance on the same event_id and stage_id.
 --If there is a previous performance
@@ -482,6 +482,81 @@ CREATE TRIGGER check_performance_breaks
 BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION enforce_break_between_performances();
+*/
+
+CREATE OR REPLACE FUNCTION check_performance_overlap_and_breaks()
+RETURNS TRIGGER AS $$
+DECLARE
+  prev_end   TIME;
+  next_start TIME;
+BEGIN
+  -- First check for performances overlap on the same event
+  IF EXISTS (
+    SELECT 1
+    FROM performance p
+    WHERE p.event_id = NEW.event_id
+      AND p.stage_id = NEW.stage_id
+      AND p.performance_id <> NEW.performance_id
+      AND p.start_time <  NEW.end_time
+      AND p.end_time   >  NEW.start_time
+  ) THEN
+    RAISE EXCEPTION
+      'Performance "%" [%→%] overlaps with existing slot on event %',
+      NEW.name, NEW.start_time, NEW.end_time, NEW.event_id;
+  END IF;
+
+  -- 1) Find the previous performance’s end_time (exclude self)
+  SELECT end_time
+    INTO prev_end
+  FROM performance
+  WHERE event_id     = NEW.event_id
+    AND stage_id     = NEW.stage_id
+    AND performance_id <> NEW.performance_id
+    AND end_time    <= NEW.start_time
+  ORDER BY end_time DESC
+  LIMIT 1;
+
+  IF prev_end IS NOT NULL THEN
+    IF NEW.start_time - prev_end < INTERVAL '5 minutes' THEN
+      RAISE EXCEPTION 'Break too short: % to % is under 5 minutes',
+        prev_end, NEW.start_time;
+    ELSIF NEW.start_time - prev_end > INTERVAL '30 minutes' THEN
+      RAISE EXCEPTION 'Break too long: % to % exceeds 30 minutes',
+        prev_end, NEW.start_time;
+    END IF;
+  END IF;
+
+  -- 2) Find the next performance’s start_time (exclude self)
+  SELECT start_time
+    INTO next_start
+  FROM performance
+  WHERE event_id      = NEW.event_id
+    AND stage_id      = NEW.stage_id
+    AND performance_id <> NEW.performance_id
+    AND start_time   >= NEW.end_time
+  ORDER BY start_time
+  LIMIT 1;
+
+  IF next_start IS NOT NULL THEN
+    IF next_start - NEW.end_time < INTERVAL '5 minutes' THEN
+      RAISE EXCEPTION 'Break too short: % to % is under 5 minutes',
+        NEW.end_time, next_start;
+    ELSIF next_start - NEW.end_time > INTERVAL '30 minutes' THEN
+      RAISE EXCEPTION 'Break too long: % to % exceeds 30 minutes',
+        NEW.end_time, next_start;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_overlap_and_breaks ON performance;
+
+CREATE TRIGGER trg_check_overlap_and_breaks
+BEFORE INSERT OR UPDATE ON performance
+FOR EACH ROW
+EXECUTE FUNCTION check_performance_overlap_and_breaks();
 
 --
 
