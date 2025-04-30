@@ -567,7 +567,7 @@ BEGIN
     FROM ticket t
     WHERE t.event_id = NEW.event_id
       AND t.visitor_id IS NOT NULL
-      AND (TG_OP = 'INSERT' OR t.ticket_id <> NEW.ticket_id);
+      AND t.ticket_id  <> COALESCE(NEW.ticket_id, -1);
 
     -- If this new/updated ticket is sold, include it in the tally
     IF NEW.visitor_id IS NOT NULL THEN
@@ -616,9 +616,9 @@ BEGIN
     SELECT COUNT(*)
       INTO vip_count
     FROM ticket t
-    WHERE t.event_id            = NEW.event_id
+    WHERE t.event_id = NEW.event_id
       AND t.ticket_category_id = 2
-      AND (TG_OP = 'INSERT' OR t.ticket_id <> NEW.ticket_id);
+      AND t.ticket_id <> COALESCE(NEW.ticket_id, -1);
 
     -- C. Include the new/updated ticket
     vip_count := vip_count + 1;
