@@ -318,7 +318,7 @@ CREATE SEQUENCE performance_id_seq
 
 CREATE TABLE performance (
     performance_id integer DEFAULT nextval('performance_id_seq'::regclass) PRIMARY KEY,
-    name varchar(40) NOT NULL,
+    name varchar(255) NOT NULL,
     event_id integer NOT NULL,
     artist_id integer,
     band_id integer,
