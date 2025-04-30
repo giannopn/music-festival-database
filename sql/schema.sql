@@ -81,6 +81,41 @@ CREATE TABLE staff (
     FOREIGN KEY (experience_level_id) REFERENCES experience_level(experience_level_id)
 );
 
+-- 1. Trigger function: ensure staff_type’s category matches staff_category
+CREATE OR REPLACE FUNCTION check_staff_type_category()
+RETURNS TRIGGER AS $$
+DECLARE
+  st_cat INT;
+BEGIN
+  -- Only check when a staff_type is assigned
+  IF NEW.staff_type_id IS NOT NULL THEN
+    -- Lookup the category of that staff_type
+    SELECT staff_category_id
+      INTO st_cat
+    FROM staff_type
+    WHERE staff_type_id = NEW.staff_type_id;
+
+    -- If it doesn’t match the staff’s category, block the change
+    IF st_cat <> NEW.staff_category_id THEN
+      RAISE EXCEPTION
+        'Staff type % belongs to category %, but staff has category %',
+        NEW.staff_type_id, st_cat, NEW.staff_category_id;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2. Attach the trigger to fire before INSERT or UPDATE on staff
+DROP TRIGGER IF EXISTS trg_check_staff_type_category ON staff;
+
+CREATE TRIGGER trg_check_staff_type_category
+BEFORE INSERT OR UPDATE ON staff
+FOR EACH ROW
+EXECUTE FUNCTION check_staff_type_category();
+
+
 CREATE TABLE event (
     event_id SERIAL PRIMARY KEY,
     festival_id INT NOT NULL,
