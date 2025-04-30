@@ -607,6 +607,78 @@ BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION check_performance_overlap_and_breaks();
 
+
+/* ---------------------------------------------------------------
+   Block an artist or band that has already performed
+   in each of the three immediately-preceding festival years
+   from being booked again this year.
+---------------------------------------------------------------- */
+CREATE OR REPLACE FUNCTION check_performer_fourth_consecutive_year()
+RETURNS TRIGGER AS $$
+DECLARE
+    curr_year  INT;
+    prev_count INT;
+BEGIN
+    /*-----------------------------------------------------------
+      1.  Determine the festival year of the performance
+    -----------------------------------------------------------*/
+    SELECT f.year
+      INTO curr_year
+    FROM event     e
+    JOIN festival  f ON f.festival_id = e.festival_id
+    WHERE e.event_id = NEW.event_id;
+
+    /*-----------------------------------------------------------
+      2.  Decide whether the performer is an artist or a band
+    -----------------------------------------------------------*/
+    IF NEW.artist_id IS NOT NULL THEN
+        /* Count distinct years (current_year-1 .. -3)
+           where THIS artist has already performed               */
+        SELECT COUNT(DISTINCT f.year)
+          INTO prev_count
+        FROM performance p
+        JOIN event      e ON p.event_id = e.event_id
+        JOIN festival   f ON e.festival_id = f.festival_id
+        WHERE p.artist_id = NEW.artist_id
+          AND f.year      IN (curr_year-1, curr_year-2, curr_year-3)
+          AND p.performance_id <> COALESCE(NEW.performance_id, -1);  -- exclude self on UPDATE
+
+        IF prev_count = 3 THEN
+            RAISE EXCEPTION
+              'Artist % has already performed in the last three consecutive festival years; cannot book a fourth (%).',
+              NEW.artist_id, curr_year;
+        END IF;
+
+    ELSIF NEW.band_id IS NOT NULL THEN
+        /* Same logic for a band */
+        SELECT COUNT(DISTINCT f.year)
+          INTO prev_count
+        FROM performance p
+        JOIN event      e ON p.event_id = e.event_id
+        JOIN festival   f ON e.festival_id = f.festival_id
+        WHERE p.band_id = NEW.band_id
+          AND f.year    IN (curr_year-1, curr_year-2, curr_year-3)
+          AND p.performance_id <> COALESCE(NEW.performance_id, -1);
+
+        IF prev_count = 3 THEN
+            RAISE EXCEPTION
+              'Band % has already performed in the last three consecutive festival years; cannot book a fourth (%).',
+              NEW.band_id, curr_year;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_performer_years ON performance;
+
+CREATE TRIGGER trg_check_performer_years
+BEFORE INSERT OR UPDATE ON performance
+FOR EACH ROW
+EXECUTE FUNCTION check_performer_fourth_consecutive_year();
+
+
 --
 
 
