@@ -21,7 +21,7 @@ CREATE TABLE festival (
     end_date DATE NOT NULL,
     location_id INT NOT NULL,
     UNIQUE (location_id),
-    year INT GENERATED ALWAYS AS (EXTRACT(YEAR FROM start_date)::int) STORED,
+    year INT GENERATED ALWAYS AS (EXTRACT(YEAR FROM start_date)::INT) STORED,
     UNIQUE (year),
     FOREIGN KEY (location_id) REFERENCES location(location_id)
 );
@@ -105,7 +105,7 @@ BEGIN
                 NEW.start_timestamp < e.end_timestamp
                 AND NEW.end_timestamp > e.start_timestamp
               )
-          AND e.event_id <> COALESCE(NEW.event_id, -1)
+          AND e.event_id <> NEW.event_id
     ) THEN
         RAISE EXCEPTION 'Stage % is already booked in the given time range.', NEW.stage_id;
     END IF;
@@ -144,7 +144,7 @@ BEGIN
           JOIN event e ON es.event_id = e.event_id
          WHERE es.staff_id = NEW.staff_id
            -- Exclude the current event in case of an update
-           AND e.event_id <> COALESCE(NEW.event_id, -1)
+           AND e.event_id <> NEW.event_id
            AND new_event.start_timestamp < e.end_timestamp
            AND new_event.end_timestamp > e.start_timestamp
     ) THEN
@@ -642,7 +642,7 @@ BEGIN
     FROM ticket t
     WHERE t.event_id = NEW.event_id
       AND t.visitor_id IS NOT NULL
-      AND t.ticket_id  <> COALESCE(NEW.ticket_id, -1);
+      AND t.ticket_id  <> NEW.ticket_id;
 
     -- If this new/updated ticket is sold, include it in the tally
     IF NEW.visitor_id IS NOT NULL THEN
@@ -693,7 +693,7 @@ BEGIN
     FROM ticket t
     WHERE t.event_id = NEW.event_id
       AND t.ticket_category_id = 2
-      AND t.ticket_id <> COALESCE(NEW.ticket_id, -1);
+      AND t.ticket_id <> NEW.ticket_id;
 
     -- C. Include the new/updated ticket
     vip_count := vip_count + 1;
