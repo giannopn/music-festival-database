@@ -113,6 +113,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_check_overlap_timestamp ON event;
+
 CREATE TRIGGER trg_check_overlap_timestamp
 BEFORE INSERT OR UPDATE ON event
 FOR EACH ROW
@@ -154,6 +156,8 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_staff_overlap ON event_staff;
 
 CREATE TRIGGER trg_check_staff_overlap
 BEFORE INSERT OR UPDATE ON event_staff
@@ -322,7 +326,7 @@ CREATE TABLE performance (
     event_id integer NOT NULL,
     artist_id integer,
     band_id integer,
-    performance_type text NOT NULL,
+    performance_type varchar(255) NOT NULL,
     start_time time NOT NULL,
     end_time time NOT NULL,
     duration integer DEFAULT 0 NOT NULL, --in minutes
@@ -357,6 +361,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_validate_artist_genre ON artist_genre;
+
 CREATE TRIGGER trg_validate_artist_genre
 BEFORE INSERT OR UPDATE ON artist_genre
 FOR EACH ROW
@@ -381,6 +387,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_validate_band_genre ON band_genre;
+
 CREATE TRIGGER trg_validate_band_genre
 BEFORE INSERT OR UPDATE ON band_genre
 FOR EACH ROW
@@ -396,6 +404,8 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS prevent_delete_performance ON performance;
 
 CREATE TRIGGER prevent_delete_performance
 BEFORE DELETE ON performance
@@ -433,6 +443,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS check_simultaneous_performance ON performance;
 
 CREATE TRIGGER check_simultaneous_performance
 BEFORE INSERT OR UPDATE ON performance
@@ -479,6 +490,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS check_performance_breaks ON performance;
 
 CREATE TRIGGER check_performance_breaks
 BEFORE INSERT OR UPDATE ON performance
@@ -662,6 +674,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_check_ticket_capacity ON ticket;
 -- 2. Attach the trigger to run before each insert or update on ticket
 CREATE TRIGGER trg_check_ticket_capacity
 BEFORE INSERT OR UPDATE ON ticket
