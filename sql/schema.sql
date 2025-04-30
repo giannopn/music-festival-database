@@ -641,7 +641,7 @@ BEGIN
         JOIN festival   f ON e.festival_id = f.festival_id
         WHERE p.artist_id = NEW.artist_id
           AND f.year      IN (curr_year-1, curr_year-2, curr_year-3)
-          AND p.performance_id <> COALESCE(NEW.performance_id, -1);  -- exclude self on UPDATE
+          AND p.performance_id <> NEW.performance_id;  -- exclude self on UPDATE
 
         IF prev_count = 3 THEN
             RAISE EXCEPTION
@@ -658,7 +658,7 @@ BEGIN
         JOIN festival   f ON e.festival_id = f.festival_id
         WHERE p.band_id = NEW.band_id
           AND f.year    IN (curr_year-1, curr_year-2, curr_year-3)
-          AND p.performance_id <> COALESCE(NEW.performance_id, -1);
+          AND p.performance_id <> NEW.performance_id;
 
         IF prev_count = 3 THEN
             RAISE EXCEPTION
