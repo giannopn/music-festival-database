@@ -26,6 +26,25 @@ CREATE TABLE festival (
     FOREIGN KEY (location_id) REFERENCES location(location_id)
 );
 
+/* 1. Trigger function */
+CREATE OR REPLACE FUNCTION prevent_festival_deletion()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TRUE THEN
+    RAISE EXCEPTION 'Festival cannot be deleted!';
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+/* 2. Attach the trigger */
+DROP TRIGGER IF EXISTS trg_block_festival_delete ON festival;
+
+CREATE TRIGGER trg_block_festival_delete
+BEFORE DELETE ON festival
+FOR EACH ROW
+EXECUTE FUNCTION prevent_festival_deletion();
+
 CREATE TABLE stage (
     stage_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -127,6 +146,25 @@ CREATE TABLE event (
     FOREIGN KEY (festival_id) REFERENCES festival(festival_id),
     FOREIGN KEY (stage_id) REFERENCES stage(stage_id)
 );
+
+/* 1. Trigger function for event deletion prevention */
+CREATE OR REPLACE FUNCTION prevent_event_deletion()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TRUE THEN
+    RAISE EXCEPTION 'Event cannot be deleted!';
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+/* 2. Attach the trigger to the event table */
+DROP TRIGGER IF EXISTS trg_block_event_delete ON event;
+
+CREATE TRIGGER trg_block_event_delete
+BEFORE DELETE ON event
+FOR EACH ROW
+EXECUTE FUNCTION prevent_event_deletion();
 
 -- Check for event overlap on the same stage
 CREATE OR REPLACE FUNCTION check_event_overlap_timestamp()
