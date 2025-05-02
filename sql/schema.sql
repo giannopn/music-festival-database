@@ -400,8 +400,8 @@ CREATE TABLE performance (
     artist_id integer,
     band_id integer,
     performance_type varchar(255) NOT NULL,
-    start_time time NOT NULL,
-    end_time time NOT NULL,
+    start_time timestamp NOT NULL,
+    end_time timestamp NOT NULL,
     duration integer DEFAULT 0 NOT NULL, --in minutes
     stage_id INTEGER NOT NULL, --Added here for better tracking for the overlapping performances of artists and brands
     FOREIGN KEY (artist_id) references artist (artist_id),
@@ -574,10 +574,26 @@ EXECUTE FUNCTION enforce_break_between_performances();
 CREATE OR REPLACE FUNCTION check_performance_overlap_and_breaks()
 RETURNS TRIGGER AS $$
 DECLARE
-  prev_end   TIME;
-  next_start TIME;
+  prev_end   TIMESTAMP;
+  next_start TIMESTAMP;
+  ev_start   TIMESTAMP;
+  ev_end     TIMESTAMP;
 BEGIN
-  -- First check for performances overlap on the same event
+  /* ------------------------------------------------------------------
+     0)  Make sure the performance window is inside the event window
+  ------------------------------------------------------------------ */
+  SELECT start_timestamp, end_timestamp
+    INTO ev_start, ev_end
+  FROM event
+  WHERE event_id = NEW.event_id;
+
+  IF NEW.start_time < ev_start OR NEW.end_time   > ev_end THEN
+    RAISE EXCEPTION
+      'Performance "%" [%→%] falls outside event % window [%→%]',
+      NEW.name, NEW.start_time, NEW.end_time, NEW.event_id, ev_start, ev_end;
+  END IF;
+
+  -- Check for performances overlap on the same event
   IF EXISTS (
     SELECT 1
     FROM performance p
