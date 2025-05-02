@@ -402,12 +402,12 @@ CREATE TABLE performance (
     performance_type varchar(255) NOT NULL,
     start_time timestamp NOT NULL,
     end_time timestamp NOT NULL,
-    duration integer DEFAULT 0 NOT NULL, --in minutes
+    duration integer GENERATED ALWAYS AS ((EXTRACT(EPOCH FROM end_time - start_time) / 60)::integer) STORED, --in minutes
     stage_id INTEGER NOT NULL, --Added here for better tracking for the overlapping performances of artists and brands
     FOREIGN KEY (artist_id) references artist (artist_id),
     FOREIGN KEY (band_id) references band (band_id),
     CHECK (start_time < end_time),
-    CHECK (end_time - start_time < INTERVAL '3 hours'),
+    CHECK (end_time - start_time <= INTERVAL '3 hours'),
     CHECK (
         (artist_id IS NOT NULL AND band_id IS NULL) OR
         (band_id IS NOT NULL AND artist_id IS NULL)
