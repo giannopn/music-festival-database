@@ -887,8 +887,8 @@ CREATE TABLE likert_value (
 
 CREATE TABLE performance_rating (
     rating_id SERIAL PRIMARY KEY,
-    performance_id  INT   NOT NULL REFERENCES event(event_id),
-    visitor_id  INT NOT NULL REFERENCES visitor(visitor_id),
+    performance_id INT NOT NULL REFERENCES performance(performance_id),
+    visitor_id INT NOT NULL REFERENCES visitor(visitor_id),
     rating_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     artist_performance_rating INT REFERENCES likert_value(likert_value_id),
     sound_lighting_rating INT REFERENCES likert_value(likert_value_id),
