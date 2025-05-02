@@ -523,54 +523,6 @@ BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION prevent_simultaneous_performances();
 
-
-
-
-
-
-
-/*
---At least 5 minutes and at most 30 minutes break between two consecutive performances.
--- The system checks for the latest performance on the same event_id and stage_id.
---If there is a previous performance
---Ensures at least 5 minutes of break.
---Ensures at most 30 minutes of break. Else an error is raised,
-
-CREATE OR REPLACE FUNCTION enforce_break_between_performances()
-RETURNS TRIGGER AS $$
-DECLARE
-    prev_end_time TIME;
-BEGIN
-    -- Find the end_time of the last performance on the same stage and event
-    SELECT end_time INTO prev_end_time
-    FROM performance
-    WHERE event_id = NEW.event_id
-      AND stage_id = NEW.stage_id
-      AND end_time <= NEW.start_time
-    ORDER BY end_time DESC
-    LIMIT 1;
-
-    -- If there is a previous performance, check break duration
-    IF prev_end_time IS NOT NULL THEN
-        IF NEW.start_time - prev_end_time < INTERVAL '5 minutes' THEN
-            RAISE EXCEPTION 'Break between performances must be at least 5 minutes!';
-        ELSIF NEW.start_time - prev_end_time > INTERVAL '30 minutes' THEN
-            RAISE EXCEPTION 'Break between performances must not exceed 30 minutes!';
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS check_performance_breaks ON performance;
-
-CREATE TRIGGER check_performance_breaks
-BEFORE INSERT OR UPDATE ON performance
-FOR EACH ROW
-EXECUTE FUNCTION enforce_break_between_performances();
-*/
-
 CREATE OR REPLACE FUNCTION check_performance_overlap_and_breaks()
 RETURNS TRIGGER AS $$
 DECLARE
