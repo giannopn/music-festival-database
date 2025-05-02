@@ -582,7 +582,6 @@ BEGIN
     SELECT 1
     FROM performance p
     WHERE p.event_id = NEW.event_id
-      AND p.stage_id = NEW.stage_id
       AND p.performance_id <> NEW.performance_id
       AND p.start_time <  NEW.end_time
       AND p.end_time   >  NEW.start_time
@@ -597,7 +596,6 @@ BEGIN
     INTO prev_end
   FROM performance
   WHERE event_id     = NEW.event_id
-    AND stage_id     = NEW.stage_id
     AND performance_id <> NEW.performance_id
     AND end_time    <= NEW.start_time
   ORDER BY end_time DESC
@@ -618,7 +616,6 @@ BEGIN
     INTO next_start
   FROM performance
   WHERE event_id      = NEW.event_id
-    AND stage_id      = NEW.stage_id
     AND performance_id <> NEW.performance_id
     AND start_time   >= NEW.end_time
   ORDER BY start_time
