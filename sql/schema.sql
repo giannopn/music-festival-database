@@ -487,41 +487,56 @@ EXECUTE FUNCTION prevent_performance_deletion();
 
 
 -- Check if artist/band perform on the same time
-CREATE OR REPLACE FUNCTION prevent_simultaneous_performances()
+CREATE OR REPLACE FUNCTION prevent_performer_double_booking()
 RETURNS TRIGGER AS $$
-DECLARE
-    overlapping_count INTEGER;
 BEGIN
-    -- Check if artist has another performance at the same time
-    SELECT COUNT(*) INTO overlapping_count
-    FROM performance
-    WHERE event_id = NEW.event_id
-      AND start_time < NEW.end_time
-      AND end_time > NEW.start_time
-      AND stage_id <> NEW.stage_id -- Ensure different stage
-      AND (
-          artist_id = NEW.artist_id OR
-          band_id = NEW.band_id OR
-          EXISTS (
-              SELECT 1 FROM band_membership
-              WHERE band_membership.artist_id = NEW.artist_id
-              AND band_membership.band_id = performance.band_id
-          ) -- Ensure artists' bands aren't double-booked
-      );
-    IF overlapping_count > 0 THEN
-        RAISE EXCEPTION 'Artist or band cannot perform on two stages at the same time!';
+    /* ─────────────────────────────────────────────────────────────
+       Check overlap for an ARTIST
+    ───────────────────────────────────────────────────────────── */
+    IF NEW.artist_id IS NOT NULL THEN
+        IF EXISTS (
+            SELECT 1
+              FROM performance p
+             WHERE p.artist_id       = NEW.artist_id
+               AND p.performance_id <> NEW.performance_id           -- exclude self
+               AND p.event_id       <> NEW.event_id                -- different event
+               AND p.start_time <  NEW.end_time         -- time ranges overlap
+               AND p.end_time   >  NEW.start_time
+        ) THEN
+            RAISE EXCEPTION
+              'Artist % is already scheduled in another event at the same time.',
+              NEW.artist_id;
+        END IF;
+
+    /* ─────────────────────────────────────────────────────────────
+       Check overlap for a BAND
+    ───────────────────────────────────────────────────────────── */
+    ELSIF NEW.band_id IS NOT NULL THEN
+        IF EXISTS (
+            SELECT 1
+              FROM performance p
+             WHERE p.band_id         = NEW.band_id
+               AND p.performance_id <> NEW.performance_id
+               AND p.event_id       <> NEW.event_id
+               AND p.start_time <  NEW.end_time
+               AND p.end_time   >  NEW.start_time
+        ) THEN
+            RAISE EXCEPTION
+              'Band % is already scheduled in another event at the same time.',
+              NEW.band_id;
+        END IF;
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS check_simultaneous_performance ON performance;
+DROP TRIGGER IF EXISTS trg_performer_double_booking ON performance;
 
-CREATE TRIGGER check_simultaneous_performance
+CREATE TRIGGER trg_performer_double_booking
 BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
-EXECUTE FUNCTION prevent_simultaneous_performances();
+EXECUTE FUNCTION prevent_performer_double_booking();
 
 CREATE OR REPLACE FUNCTION check_performance_overlap_and_breaks()
 RETURNS TRIGGER AS $$
