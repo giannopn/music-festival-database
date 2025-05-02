@@ -403,7 +403,6 @@ CREATE TABLE performance (
     start_time timestamp NOT NULL,
     end_time timestamp NOT NULL,
     duration integer GENERATED ALWAYS AS ((EXTRACT(EPOCH FROM end_time - start_time) / 60)::integer) STORED, --in minutes
-    stage_id INTEGER NOT NULL, --Added here for better tracking for the overlapping performances of artists and brands
     FOREIGN KEY (artist_id) references artist (artist_id),
     FOREIGN KEY (band_id) references band (band_id),
     CHECK (start_time < end_time),
@@ -705,9 +704,7 @@ CREATE UNIQUE INDEX idx_artist_instagram ON artist USING btree (instagram_profil
 CREATE INDEX idx_band_name ON band USING btree (name);
 CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
 CREATE INDEX idx_performance_event ON performance USING btree (event_id);
-CREATE INDEX idx_performance_stage ON performance USING btree (stage_id);
 CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
-CREATE INDEX idx_performance_conflict ON performance USING btree (artist_id, band_id, stage_id) WHERE artist_id IS NOT NULL OR band_id IS NOT NULL;
 CREATE INDEX idx_band_membership_artist ON band_membership USING btree (artist_id);
 CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
 CREATE INDEX idx_genre_name ON genre USING btree (name);
@@ -724,7 +721,6 @@ CREATE INDEX idx_band_genre_subgenre ON band_genre (subgenre_id);
 
 --Add control over the duplicates for
 ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
-ALTER TABLE performance ADD CONSTRAINT unique_performance_event_stage UNIQUE (event_id, stage_id, start_time);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
 
 
