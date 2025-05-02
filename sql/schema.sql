@@ -63,8 +63,8 @@ CREATE TABLE stage_equipment (
     equipment_id INT NOT NULL,
     quantity INT NOT NULL CHECK (quantity >= 0),
     PRIMARY KEY (stage_id, equipment_id),
-    FOREIGN KEY (stage_id) REFERENCES stage(stage_id),
-    FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id)
+    FOREIGN KEY (stage_id) REFERENCES stage(stage_id) ON DELETE CASCADE,
+    FOREIGN KEY (equipment_id) REFERENCES equipment(equipment_id) ON DELETE CASCADE
 );
 
 CREATE TABLE staff_category (
@@ -78,7 +78,7 @@ CREATE TABLE staff_type (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     staff_category_id INT NOT NULL,
-    FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id)
+    FOREIGN KEY (staff_category_id) REFERENCES staff_category(staff_category_id) ON DELETE CASCADE
 );
 
 CREATE TABLE experience_level (
@@ -197,8 +197,8 @@ CREATE TABLE event_staff (
     event_id INT NOT NULL,
     staff_id INT NOT NULL,
     PRIMARY KEY (event_id, staff_id),
-    FOREIGN KEY (event_id) REFERENCES event(event_id),
-    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
+    FOREIGN KEY (event_id) REFERENCES event(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE
 );
 
 CREATE OR REPLACE FUNCTION check_staff_event_overlap()
@@ -314,7 +314,7 @@ CREATE TABLE subgenre(
   subgenre_id serial PRIMARY KEY,
   name varchar(255) NOT NULL,
   genre_id integer NOT null,
-  FOREIGN KEY (genre_id) references genre (genre_id)
+  FOREIGN KEY (genre_id) references genre (genre_id) ON DELETE CASCADE
 );
 
 CREATE SEQUENCE artist_id_seq
@@ -357,7 +357,7 @@ CREATE TABLE artist_genre (
     subgenre_id INTEGER,
     PRIMARY KEY (artist_id, genre_id, subgenre_id),
     FOREIGN KEY (artist_id) REFERENCES artist (artist_id) ON DELETE CASCADE,
-    FOREIGN KEY (genre_id) REFERENCES genre (genre_id),
+    FOREIGN KEY (genre_id) REFERENCES genre (genre_id) ON DELETE CASCADE,
     FOREIGN KEY (subgenre_id) REFERENCES subgenre (subgenre_id)
 );
 
@@ -367,7 +367,7 @@ CREATE TABLE band_genre (
     subgenre_id INTEGER,
     PRIMARY KEY (band_id, genre_id, subgenre_id),
     FOREIGN KEY (band_id) REFERENCES band (band_id) ON DELETE CASCADE,
-    FOREIGN KEY (genre_id) REFERENCES genre (genre_id),
+    FOREIGN KEY (genre_id) REFERENCES genre (genre_id) ON DELETE CASCADE,
     FOREIGN KEY (subgenre_id) REFERENCES subgenre (subgenre_id)
 );
 
@@ -852,8 +852,8 @@ CREATE TABLE likert_value (
 
 CREATE TABLE performance_rating (
     rating_id SERIAL PRIMARY KEY,
-    performance_id INT NOT NULL REFERENCES performance(performance_id),
-    visitor_id INT NOT NULL REFERENCES visitor(visitor_id),
+    performance_id INT NOT NULL REFERENCES performance(performance_id) ON DELETE CASCADE,
+    visitor_id INT NOT NULL REFERENCES visitor(visitor_id) ON DELETE CASCADE,
     rating_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     artist_performance_rating INT REFERENCES likert_value(likert_value_id),
     sound_lighting_rating INT REFERENCES likert_value(likert_value_id),
