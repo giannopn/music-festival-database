@@ -239,64 +239,62 @@ EXECUTE FUNCTION check_staff_event_overlap();
 
 
 -- USE IT AS CONSTRAINT TRIGGER, DEFERRABLE INITIALLY DEFERRED
--- 1. Create the trigger function that enforces the minimum staff coverage
-CREATE OR REPLACE FUNCTION check_event_staff_coverage()
-RETURNS TRIGGER AS $$
+/*───────────────────────────────────────────────────────────────────
+  Callable procedure:
+  Ensures an event has at least
+     • security staff = 5 % of stage capacity   (rounded up)
+     • support  staff = 2 % of stage capacity   (rounded up)
+  Call it like:
+     SELECT check_event_staff_coverage(42);   -- where 42 = event_id
+───────────────────────────────────────────────────────────────────*/
+CREATE OR REPLACE FUNCTION check_event_staff_coverage(p_event_id INT)
+RETURNS VOID AS $$
 DECLARE
-    evt_id     INT;
     cap        INT;
     sec_req    INT;
     sup_req    INT;
     sec_count  INT;
     sup_count  INT;
 BEGIN
-    -- Determine which event_id to check (NEW for insert/update, OLD for delete)
-    IF (TG_OP = 'DELETE') THEN
-        evt_id := OLD.event_id;
-    ELSE
-        evt_id := NEW.event_id;
-    END IF;
-
-    -- Fetch the stage capacity for that event
+    /* 1. Get stage capacity for this event */
     SELECT s.max_capacity
       INTO cap
-    FROM event e
-    JOIN stage s ON e.stage_id = s.stage_id
-    WHERE e.event_id = evt_id;
+    FROM event  e
+    JOIN stage  s ON s.stage_id = e.stage_id
+    WHERE e.event_id = p_event_id;
 
-    -- Calculate required numbers (5% for security, 2% for support)
+    /* 2. Required head-counts (ceiling) */
     sec_req := CEIL(cap * 0.05)::INT;
     sup_req := CEIL(cap * 0.02)::INT;
 
-    -- Count assigned security staff
-    SELECT COUNT(*) INTO sec_count
+    /* 3. Count assigned SECURITY staff */
+    SELECT COUNT(*)
+      INTO sec_count
     FROM event_staff es
-    JOIN staff st            ON es.staff_id = st.staff_id
-    JOIN staff_category sc   ON st.staff_category_id = sc.staff_category_id
-    WHERE es.event_id = evt_id
-      AND sc.name = 'Security';
+    JOIN staff st  ON st.staff_id  = es.staff_id
+    WHERE es.event_id           = p_event_id
+      AND st.staff_category_id = 2;
 
-    -- Count assigned support staff
-    SELECT COUNT(*) INTO sup_count
+    /* 4. Count assigned SUPPORT staff */
+    SELECT COUNT(*)
+      INTO sup_count
     FROM event_staff es
-    JOIN staff st            ON es.staff_id = st.staff_id
-    JOIN staff_category sc   ON st.staff_category_id = sc.staff_category_id
-    WHERE es.event_id = evt_id
-      AND sc.name = 'Support';
+    JOIN staff st  ON st.staff_id  = es.staff_id
+    WHERE es.event_id           = p_event_id
+      AND st.staff_category_id = 3;
 
-    -- Enforce minimums
+    /* 5. Enforce */
     IF sec_count < sec_req THEN
         RAISE EXCEPTION
-          'Event %: only % security staff assigned, but at least % required (5%% of capacity %)',
-          evt_id, sec_count, sec_req, cap;
-    END IF;
-    IF sup_count < sup_req THEN
-        RAISE EXCEPTION
-          'Event %: only % support staff assigned, but at least % required (2%% of capacity %)',
-          evt_id, sup_count, sup_req, cap;
+          'Event %: % security staff assigned, minimum % (5%% of % capacity).',
+          p_event_id, sec_count, sec_req, cap;
     END IF;
 
-    RETURN NEW;
+    IF sup_count < sup_req THEN
+        RAISE EXCEPTION
+          'Event %: % support staff assigned, minimum % (2%% of % capacity).',
+          p_event_id, sup_count, sup_req, cap;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
