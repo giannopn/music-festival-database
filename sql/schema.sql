@@ -147,6 +147,55 @@ CREATE TABLE event (
     FOREIGN KEY (stage_id) REFERENCES stage(stage_id)
 );
 
+/*───────────────────────────────────────────────────────────────────
+  Trigger function
+  Ensures every event’s time window fits completely inside the
+  date range of its parent festival.
+     • festival.start_date   is taken as 00:00:00 of that day
+     • festival.end_date     is taken as 23:59:59 of that day
+  Any insert or update that violates the rule is rejected.
+───────────────────────────────────────────────────────────────────*/
+CREATE OR REPLACE FUNCTION check_event_within_festival_dates()
+RETURNS TRIGGER AS $$
+DECLARE
+    fest_start_ts TIMESTAMP;   -- festival start at 00:00
+    fest_end_ts   TIMESTAMP;   -- festival end   at 23:59:59
+BEGIN
+    /* 1 ── Fetch the festival’s date range */
+    SELECT  start_date,
+            end_date + INTERVAL '1 day' - INTERVAL '1 second'   -- 23:59:59
+      INTO  fest_start_ts,
+            fest_end_ts
+    FROM festival
+    WHERE festival_id = NEW.festival_id;
+
+    IF fest_start_ts IS NULL OR fest_end_ts IS NULL THEN
+        RAISE EXCEPTION
+          'Festival % has NULL start or end dates – set them before adding events.',
+          NEW.festival_id;
+    END IF;
+
+    /* 2 ── Validate the event window */
+    IF NEW.start_timestamp < fest_start_ts
+       OR NEW.end_timestamp   > fest_end_ts
+    THEN
+        RAISE EXCEPTION
+          'Event [%→%] falls outside festival % window [%→%]',
+          NEW.start_timestamp, NEW.end_timestamp,
+          NEW.festival_id,     fest_start_ts, fest_end_ts;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_event_festival_range ON event;
+
+CREATE TRIGGER trg_check_event_festival_range
+BEFORE INSERT OR UPDATE ON event
+FOR EACH ROW
+EXECUTE FUNCTION check_event_within_festival_dates();
+
 /* 1. Trigger function for event deletion prevention */
 CREATE OR REPLACE FUNCTION prevent_event_deletion()
 RETURNS TRIGGER AS $$
