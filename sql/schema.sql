@@ -803,6 +803,30 @@ CREATE TABLE ticket (
     UNIQUE (visitor_id, event_id)
 );
 
+ALTER TABLE ticket
+DROP CONSTRAINT IF EXISTS chk_ean13_valid,
+ADD CONSTRAINT chk_ean13_valid
+  CHECK (
+    -- must be exactly 13 digits
+    ean13_code ~ '^[0-9]{13}$'
+    AND
+    -- weighted sum of all 13 digits ≡ 0 mod 10
+    (
+      (substr(ean13_code,  1, 1)::int * 1) +
+      (substr(ean13_code,  2, 1)::int * 3) +
+      (substr(ean13_code,  3, 1)::int * 1) +
+      (substr(ean13_code,  4, 1)::int * 3) +
+      (substr(ean13_code,  5, 1)::int * 1) +
+      (substr(ean13_code,  6, 1)::int * 3) +
+      (substr(ean13_code,  7, 1)::int * 1) +
+      (substr(ean13_code,  8, 1)::int * 3) +
+      (substr(ean13_code,  9, 1)::int * 1) +
+      (substr(ean13_code, 10, 1)::int * 3) +
+      (substr(ean13_code, 11, 1)::int * 1) +
+      (substr(ean13_code, 12, 1)::int * 3) +
+      (substr(ean13_code, 13, 1)::int * 1)
+    ) % 10 = 0
+  );
 
 -- 1. Create trigger function to enforce capacity for sold tickets
 CREATE OR REPLACE FUNCTION check_ticket_capacity()
