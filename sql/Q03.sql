@@ -1,8 +1,10 @@
 /* QUERY 03 - Βρείτε ποιοι καλλιτέχνες έχουν εμφανιστεί ως warm up περισσότερες από 2 φορές στο ίδιο φεστιβάλ; */
-select a.stage_name, count(p.artist_id) AS appearences, p.performance_type, e."name", e.festival_id 
-from performance p 
-join "event" e on (e.event_id = p.event_id)
-join artist a on (a.artist_id= p.artist_id)
+select p.artist_id, a.stage_name, e.festival_id, f.name as festival_name, count(*) as warmup_count
+from performance p
+join event     e on p.event_id    = e.event_id
+join festival  f on e.festival_id = f.festival_id
+join artist    a on p.artist_id   = a.artist_id
 where p.performance_type = 'Warm Up'
-group by p.artist_id, p.performance_type, e."name", e.festival_id, a.stage_name 
-having count(p.artist_id)>=2
+group by p.artist_id, a.stage_name, e.festival_id, f.name
+having count(*) > 2
+order by warmup_count desc;
