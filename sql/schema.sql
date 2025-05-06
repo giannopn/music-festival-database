@@ -9,9 +9,9 @@ CREATE TABLE location (
     address VARCHAR(255) NOT NULL,
     city VARCHAR(255) NOT NULL,
     country VARCHAR(255) NOT NULL,
-    continent INT NOT NULL,
+    continent_id INT NOT NULL,
     coordinates POINT NULL,
-    FOREIGN KEY (continent) REFERENCES continent(continent_id)
+    FOREIGN KEY (continent_id) REFERENCES continent(continent_id)
 );
 
 CREATE TABLE festival (
