@@ -6,4 +6,4 @@ and s.staff_id not in (
 	SELECT es.staff_id
 	FROM event_staff es
 	JOIN event e ON es.event_id = e.event_id
-	WHERE DATE(e.start_timestamp) = '2019-06-05')
+	WHERE DATE(e.start_timestamp) = '2017-06-01')
