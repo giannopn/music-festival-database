@@ -3,11 +3,11 @@
 */
 --festival per day
 with festival_per_day as(
-select e.festival_id, date(start_timestamp) as running_date, e.event_id from "event" e 
-where festival_id = 1
-union
-select e.festival_id, date(end_timestamp) as running_date, e.event_id from "event" e 
-where festival_id = 1
+	select e.festival_id, date(start_timestamp) as running_date, e.event_id from "event" e 
+	where festival_id = 1
+	union
+	select e.festival_id, date(end_timestamp) as running_date, e.event_id from "event" e 
+	--where festival_id = 1
 )
 select fpd.festival_id, fpd.running_date, sc."name"
 , count(sc.staff_category_id) as number_of_staff_employeed
