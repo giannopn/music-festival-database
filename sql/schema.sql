@@ -743,32 +743,7 @@ FOR EACH ROW
 EXECUTE FUNCTION check_performer_fourth_consecutive_year();
 
 
---
 
-
-CREATE INDEX idx_artist_stage_name ON artist USING btree (stage_name);
-CREATE UNIQUE INDEX idx_artist_instagram ON artist USING btree (instagram_profile);
-CREATE INDEX idx_band_name ON band USING btree (name);
-CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
-CREATE INDEX idx_performance_event ON performance USING btree (event_id);
-CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
-CREATE INDEX idx_band_membership_artist ON band_membership USING btree (artist_id);
-CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
-CREATE INDEX idx_genre_name ON genre USING btree (name);
-CREATE INDEX idx_subgenre_name ON subgenre USING btree (name);
-CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
-CREATE INDEX idx_artist_genre_artist ON artist_genre (artist_id);
-CREATE INDEX idx_artist_genre_genre ON artist_genre (genre_id);
-CREATE INDEX idx_artist_genre_subgenre ON artist_genre (subgenre_id);
-CREATE INDEX idx_band_genre_band ON band_genre (band_id);
-CREATE INDEX idx_band_genre_genre ON band_genre (genre_id);
-CREATE INDEX idx_band_genre_subgenre ON band_genre (subgenre_id);
-
-
-
---Add control over the duplicates for
-ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
-ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
 
 
 CREATE TABLE ticket_category (
@@ -945,3 +920,36 @@ CREATE TABLE performance_rating (
     UNIQUE (performance_id, visitor_id)
 );
 
+
+--
+
+
+CREATE INDEX idx_artist_stage_name ON artist USING btree (stage_name);
+CREATE UNIQUE INDEX idx_artist_instagram ON artist USING btree (instagram_profile);
+CREATE INDEX idx_band_name ON band USING btree (name);
+CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
+CREATE INDEX idx_performance_event ON performance USING btree (event_id);
+CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
+CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
+CREATE INDEX idx_genre_name ON genre USING btree (name);
+CREATE INDEX idx_subgenre_name ON subgenre USING btree (name);
+CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
+CREATE INDEX idx_artist_genre_artist ON artist_genre (artist_id);
+CREATE INDEX idx_artist_genre_genre ON artist_genre (genre_id);
+CREATE INDEX idx_artist_genre_subgenre ON artist_genre (subgenre_id);
+CREATE INDEX idx_band_genre_band ON band_genre (band_id);
+CREATE INDEX idx_band_genre_genre ON band_genre (genre_id);
+CREATE INDEX idx_band_genre_subgenre ON band_genre (subgenre_id);
+CREATE INDEX idx_event_staff_staff   ON event_staff (staff_id);
+CREATE INDEX idx_performance_artist  ON performance  (artist_id);
+CREATE INDEX idx_performance_band    ON performance  (band_id);
+CREATE INDEX idx_event_stage_time    ON event (stage_id, start_timestamp, end_timestamp);
+CREATE INDEX idx_ticket_event_sold   ON ticket(event_id);
+CREATE INDEX idx_performance_event_time ON performance(event_id, start_time, end_time);
+CREATE INDEX idx_artist_genre_comp ON artist_genre(genre_id, subgenre_id);
+CREATE INDEX idx_band_genre_comp   ON band_genre  (genre_id, subgenre_id);
+
+
+
+ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
+ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
