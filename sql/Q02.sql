@@ -10,5 +10,5 @@ join genre g on (g.genre_id= ag.genre_id)
 join "event" e on (e.event_id=p.event_id)
 join festival f ON (f.festival_id = e.festival_id)
 where p.performance_type = <performance_type> --replace with 'Warm Up', 'Main' 
-and g.name = <"name"> --'Rock', 'Jazz'
-and f.year = <year> -- 2020, 2021
+and g.name = <"name"> --'Pop', 'Electronic'
+and f.year = <year> -- 2014
