@@ -1,9 +1,9 @@
 /* QUERY 13 - Βρείτε τους καλλιτέχνες που έχουν συμμετάσχει σε φεστιβάλ σε τουλάχιστον 3 διαφορετικές ηπείρους.*/
-with festival_per_continent as (--festival per continent
+with festival_per_continent as ( --festival per continent
 	select f.festival_id, c."name" as continent
 	from festival f 
 	join "location" l on l.location_id = f.location_id 
-	join continent c on c.continent_id = l.continent),
+	join continent c on c.continent_id =l.continent),
 artist_per_festival as (
 	--artist per festival
 	select a.artist_id, e.festival_id from artist a 
