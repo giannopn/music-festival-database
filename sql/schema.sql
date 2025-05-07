@@ -169,18 +169,13 @@ BEGIN
     FROM festival
     WHERE festival_id = NEW.festival_id;
 
-    IF fest_start_ts IS NULL OR fest_end_ts IS NULL THEN
-        RAISE EXCEPTION
-          'Festival % has NULL start or end dates – set them before adding events.',
-          NEW.festival_id;
-    END IF;
-
     /* 2 ── Validate the event window */
     IF NEW.start_timestamp < fest_start_ts
        OR NEW.end_timestamp   > fest_end_ts
     THEN
         RAISE EXCEPTION
-          'Event [%→%] falls outside festival % window [%→%]',
+          'Event "%" [%→%] falls outside festival % window [%→%]',
+          NEW.event_id,
           NEW.start_timestamp, NEW.end_timestamp,
           NEW.festival_id,     fest_start_ts, fest_end_ts;
     END IF;

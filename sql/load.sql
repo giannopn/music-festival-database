@@ -16,7 +16,7 @@ INSERT INTO continent (name) VALUES
 ('Oceania'),
 ('South America');
 
-INSERT INTO "location" ("name", address, city, country, continent, coordinates) VALUES
+INSERT INTO "location" ("name", address, city, country, continent_id, coordinates) VALUES
 ('Pilton Festival Grounds', 'Pilton Festival Grounds', 'Western Australia', 'Australia', 6, POINT(-18.70724,87.22709)),
 ('Empire Polo Club', '81-800 California 111', 'Indio', 'United States', 5, POINT(-116.2383,33.7158)),
 ('Idanha-a-Nova Fairgrounds', 'Estrada de Monsanto', 'Idanha-a-Nova', 'Portugal', 4, POINT(-7.4278,39.8969)),
