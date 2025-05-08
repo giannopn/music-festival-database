@@ -895,6 +895,53 @@ BEFORE INSERT OR UPDATE ON ticket
 FOR EACH ROW
 EXECUTE FUNCTION enforce_vip_ticket_limit();
 
+CREATE OR REPLACE FUNCTION update_event_sold_out()
+RETURNS TRIGGER AS $$
+DECLARE
+    evt_id   INT;
+    cap      INT;
+    sold_cnt INT;
+BEGIN
+    /* Determine which event we must refresh */
+    IF TG_OP = 'DELETE' THEN          -- row is being removed
+        evt_id := OLD.event_id;
+    ELSE                              -- INSERT or UPDATE
+        evt_id := NEW.event_id;
+    END IF;
+
+    /* 1. Capacity of the stage for that event */
+    SELECT s.max_capacity
+      INTO cap
+    FROM event  e
+    JOIN stage  s ON s.stage_id = e.stage_id
+    WHERE e.event_id = evt_id;
+
+    /* 2. Count sold tickets (visitor_id NOT NULL) */
+    SELECT COUNT(*)
+      INTO sold_cnt
+    FROM ticket t
+    WHERE t.event_id    = evt_id;
+
+    /* 3. Mark the event sold-out status */
+    UPDATE event
+       SET sold_out = (sold_cnt >= cap)
+     WHERE event_id = evt_id;
+
+    /* Trigger rows must return something */
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_event_sold_out ON ticket;
+
+CREATE TRIGGER trg_update_event_sold_out
+AFTER INSERT OR UPDATE OR DELETE ON ticket
+FOR EACH ROW
+EXECUTE FUNCTION update_event_sold_out();
 
 CREATE TABLE likert_value (
     likert_value_id SERIAL PRIMARY KEY,
