@@ -762,11 +762,11 @@ CREATE TABLE visitor (
 CREATE TABLE ticket (
     ticket_id SERIAL PRIMARY KEY,
     event_id INT NOT NULL REFERENCES event(event_id),
-    visitor_id INT REFERENCES visitor(visitor_id),
-    purchase_date DATE,
+    visitor_id INT NOT NULL REFERENCES visitor(visitor_id),
+    purchase_date DATE NOT NULL,
     ticket_category_id INT NOT NULL REFERENCES ticket_category(ticket_category_id),
     cost NUMERIC(10,2) NOT NULL,
-    payment_method_id INT REFERENCES payment_method(payment_method_id),
+    payment_method_id INT NOT NULL REFERENCES payment_method(payment_method_id),
     ean13_code CHAR(13) NOT NULL,
     UNIQUE (ean13_code),
     used BOOLEAN NOT NULL DEFAULT FALSE,
@@ -817,7 +817,6 @@ BEGIN
       INTO sold_count
     FROM ticket t
     WHERE t.event_id = NEW.event_id
-      AND t.visitor_id IS NOT NULL
       AND t.ticket_id  <> NEW.ticket_id;
 
     -- If this new/updated ticket is sold, include it in the tally
