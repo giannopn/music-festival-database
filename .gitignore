@@ -1,3 +1,3 @@
 .idea/
 .DS_Store
-./sql/test-queries.sql
+/sql/test-queries.sql
