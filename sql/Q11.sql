@@ -1,7 +1,7 @@
 /* QUERY 11 - Βρείτε όλους τους καλλιτέχνες που συμμετείχαν τουλάχιστον 5 λιγότερες φορές από τον καλλιτέχνη με τις
 περισσότερες συμμετοχές σε φεστιβάλ.*/
 with festival_participations as (
-	select a.artist_id, a.stage_name, count(e.festival_id) as appearences
+	select a.artist_id, a.stage_name, count(DISTINCT e.festival_id) as appearences
 	from artist a 
 	join performance p on p.artist_id = a.artist_id 
 	join event e on e.event_id = p.event_id 

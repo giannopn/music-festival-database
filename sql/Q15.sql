@@ -3,7 +3,7 @@
 επισκέπτη, όνομα καλλιτέχνη και συνολικό σκορ βαθμολόγησης);
 
 with visitor_artist_scores as (
-  selectpr.visitor_id, p.artist_id,
+  select pr.visitor_id, p.artist_id,
     sum(coalesce(pr.artist_performance_rating, 0)+coalesce(pr.sound_lighting_rating, 0) + coalesce(pr.stage_presence_rating,0)+ coalesce(pr.organization_rating,0) + coalesce(pr.overall_impression_rating, 0)) as total_score
   from performance_rating pr
   join performance p on pr.performance_id = p.performance_id
