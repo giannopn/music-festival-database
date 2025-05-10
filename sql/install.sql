@@ -788,7 +788,7 @@ CREATE TABLE ticket (
     ticket_id SERIAL PRIMARY KEY,
     event_id INT NOT NULL REFERENCES event(event_id),
     visitor_id INT NOT NULL REFERENCES visitor(visitor_id),
-    purchase_date DATE NOT NULL,
+    purchase_date TIMESTAMP NOT NULL,
     ticket_category_id INT NOT NULL REFERENCES ticket_category(ticket_category_id),
     cost NUMERIC(10,2) NOT NULL,
     payment_method_id INT NOT NULL REFERENCES payment_method(payment_method_id),
@@ -986,7 +986,364 @@ CREATE TABLE performance_rating (
     UNIQUE (performance_id, visitor_id)
 );
 
+/*───────────────────────────────────────────────────────────────────
+  Trigger function
+  Allows a row in performance_rating to be inserted / updated only if
+    • the visitor holds at least one ticket for the **event** of
+      the performance being rated, **and**
+    • that ticket is already used  (ticket.used = TRUE)
+───────────────────────────────────────────────────────────────────*/
+CREATE OR REPLACE FUNCTION chk_rating_allowed()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_event_id INT;
+BEGIN
+    /* 1. Find the event of the performance being rated */
+    SELECT event_id
+      INTO v_event_id
+    FROM performance
+    WHERE performance_id = NEW.performance_id;
 
+    /* 2. Verify visitor has a USED ticket for that event */
+    IF NOT EXISTS (
+        SELECT 1
+          FROM ticket t
+         WHERE t.event_id   = v_event_id
+           AND t.visitor_id = NEW.visitor_id
+           AND t.used       = TRUE
+    ) THEN
+        RAISE EXCEPTION
+          'Visitor % cannot rate performance %: no used ticket for its event.',
+          NEW.visitor_id, NEW.performance_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/*───────────────────────────────────────────────────────────────────
+  Attach BEFORE INSERT / UPDATE trigger to performance_rating table
+───────────────────────────────────────────────────────────────────*/
+DROP TRIGGER IF EXISTS trg_chk_rating_allowed ON performance_rating;
+
+CREATE TRIGGER trg_chk_rating_allowed
+BEFORE INSERT OR UPDATE ON performance_rating
+FOR EACH ROW
+EXECUTE FUNCTION chk_rating_allowed();
+
+/* ──────────────────────────────────────────────────────────────
+   1.  Table: resale_queue
+   ────────────────────────────────────────────────────────────── */
+CREATE TABLE resale_queue (
+    resale_id     SERIAL PRIMARY KEY,
+    ticket_id     INT  NOT NULL REFERENCES ticket(ticket_id),
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at  TIMESTAMP
+);
+
+/* ──────────────────────────────────────────────────────────────
+   2.  Table: buyer_queue
+   ────────────────────────────────────────────────────────────── */
+CREATE TABLE buyer_queue (
+    buyer_id           SERIAL PRIMARY KEY,
+    visitor_id         INT  NOT NULL REFERENCES visitor(visitor_id),
+    event_id           INT REFERENCES event(event_id),
+    ticket_category_id INT REFERENCES ticket_category(ticket_category_id),
+    resale_id          INT,
+    created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at       TIMESTAMP,
+
+    CONSTRAINT ck_buyer_request_exclusive
+    CHECK (
+        ( resale_id IS NOT NULL
+          AND event_id IS NULL
+          AND ticket_category_id IS NULL )
+     OR ( resale_id IS NULL
+          AND event_id IS NOT NULL
+          AND ticket_category_id IS NOT NULL )
+    )
+);
+
+-- Fast lookup for open resale listings, one active row per ticket
+CREATE INDEX resale_open_idx
+  ON resale_queue(ticket_id)
+  WHERE processed_at IS NULL;      -- partial unique index
+
+-- Quickly match buyers waiting for a given event / category
+CREATE INDEX buyer_event_category_open_idx
+  ON buyer_queue(event_id, ticket_category_id)
+  WHERE resale_id IS NULL AND processed_at IS NULL;
+
+-- Quickly match buyers waiting for a specific resale ticket
+CREATE INDEX buyer_resale_open_idx
+  ON buyer_queue(resale_id)
+  WHERE resale_id IS NOT NULL AND processed_at IS NULL;
+
+/*──────────────────────────────────────────────────────────────────
+  AFTER-INSERT trigger on resale_queue
+  •  Checks that the ticket’s event is sold-out
+  •  Checks that the ticket is NOT used
+  •  FIFO-matches the listing with the first waiting buyer
+    (same event & ticket-category, buyer_queue.processed_at IS NULL)
+  •  On a match:
+        – transfers the ticket to the buyer (updates visitor_id,
+          sets purchase_date = today)
+        – stamps CURRENT_TIMESTAMP into   resale_queue.processed_at
+        – stamps CURRENT_TIMESTAMP into   buyer_queue.processed_at
+──────────────────────────────────────────────────────────────────*/
+-- 1. Trigger function: validate and process a new resale listing
+CREATE OR REPLACE FUNCTION process_resale_listing()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_event_id    INT;
+    v_category_id INT;
+    v_used        BOOLEAN;
+    v_seller_id   INT;
+    v_buyer       RECORD;
+BEGIN
+    --------------------------------------------------------------------------------
+    -- 0) Prevent more than one *active* listing per ticket
+    --------------------------------------------------------------------------------
+    IF EXISTS (
+       SELECT 1
+         FROM resale_queue r
+        WHERE r.ticket_id    = NEW.ticket_id
+          AND r.resale_id   <> NEW.resale_id
+          AND r.processed_at IS NULL
+        FOR UPDATE
+    ) THEN
+        RAISE EXCEPTION
+          'Ticket % is already listed for resale.',
+          NEW.ticket_id;
+    END IF;
+
+    -- 1) Lock & fetch the ticket’s event, category & used‐flag
+    SELECT t.event_id,
+           t.ticket_category_id,
+           t.used,
+           t.visitor_id
+      INTO v_event_id, v_category_id, v_used, v_seller_id
+    FROM ticket t
+    WHERE t.ticket_id = NEW.ticket_id
+    FOR UPDATE;
+
+    -- 2) Reject if the ticket has already been used
+    IF v_used THEN
+        RAISE EXCEPTION
+          'Cannot list ticket % for resale: it has already been used.',
+          NEW.ticket_id;
+    END IF;
+
+    -- 3) Reject if the event is not sold out
+    IF NOT EXISTS (
+        SELECT 1
+          FROM event e
+         WHERE e.event_id = v_event_id
+           AND e.sold_out = TRUE
+    ) THEN
+        RAISE EXCEPTION
+          'Cannot list ticket %: event % is not sold out.',
+          NEW.ticket_id, v_event_id;
+    END IF;
+
+    -- 4) Attempt FIFO‐safe match with the first waiting buyer
+    SELECT *
+      INTO v_buyer
+    FROM buyer_queue b
+    WHERE b.processed_at        IS NULL
+      AND b.resale_id           IS NULL
+      AND b.event_id            = v_event_id
+      AND b.ticket_category_id  = v_category_id
+      AND b.visitor_id         <> v_seller_id    -- skip the original owner
+    ORDER BY b.created_at
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED;
+
+    -- 5) If a buyer is found, transfer ticket and mark both queues processed
+    IF FOUND THEN
+        -- 5a) transfer ticket ownership
+        UPDATE ticket
+           SET visitor_id    = v_buyer.visitor_id,
+               purchase_date = CURRENT_TIMESTAMP
+         WHERE ticket_id = NEW.ticket_id;
+
+        -- 5b) mark buyer request fulfilled
+        UPDATE buyer_queue
+           SET processed_at = CURRENT_TIMESTAMP
+         WHERE buyer_id = v_buyer.buyer_id;
+
+        -- 5c) mark this resale listing processed
+        UPDATE resale_queue
+           SET processed_at = CURRENT_TIMESTAMP
+         WHERE resale_id = NEW.resale_id;
+    END IF;
+
+    -- 6) always keep the resale_queue row (processed_at NULL if no match)
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2. Attach the AFTER INSERT trigger
+DROP TRIGGER IF EXISTS trg_process_resale_listing ON resale_queue;
+
+CREATE TRIGGER trg_process_resale_listing
+AFTER INSERT ON resale_queue
+FOR EACH ROW
+EXECUTE FUNCTION process_resale_listing();
+
+-- 1) Create a trigger function that fires when a ticket is marked used
+CREATE OR REPLACE FUNCTION cleanup_resale_on_ticket_used()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only act when used flips to TRUE
+    IF (TG_OP = 'UPDATE')
+      AND (OLD.used IS DISTINCT FROM NEW.used)
+      AND NEW.used = TRUE
+    THEN
+        -- Mark any active resale listing for this ticket as processed,
+        -- so buyers won’t match against it
+        UPDATE resale_queue
+           SET processed_at = CURRENT_TIMESTAMP
+         WHERE ticket_id    = NEW.ticket_id
+           AND processed_at IS NULL;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 2) Attach it as an AFTER UPDATE trigger on ticket.used
+DROP TRIGGER IF EXISTS trg_cleanup_resale_on_ticket_used ON ticket;
+
+CREATE TRIGGER trg_cleanup_resale_on_ticket_used
+AFTER UPDATE OF used ON ticket
+FOR EACH ROW
+WHEN (OLD.used IS DISTINCT FROM NEW.used AND NEW.used = TRUE)
+EXECUTE FUNCTION cleanup_resale_on_ticket_used();
+
+/*───────────────────────────────────────────────────────────────────
+  AFTER-INSERT trigger on buyer_queue
+  •  If buyer requests a *specific* resale listing (resale_id-mode)
+       – fetch that resale row (unprocessed) and lock it
+  •  Else (event+category mode)
+       – pick the oldest unprocessed resale listing whose ticket
+         matches (event_id , ticket_category_id)
+  •  If a resale listing is found
+       – transfer ticket to this buyer
+       – mark BOTH rows processed_at = NOW()
+       – (and, if not already set, copy resale_id into buyer row)
+───────────────────────────────────────────────────────────────────*/
+CREATE OR REPLACE FUNCTION process_buyer_request()
+RETURNS TRIGGER AS $$
+DECLARE
+    r_resale          RECORD;
+    v_seller_id         INT;
+BEGIN
+    ------------------------------------------------------------------
+    -- 1) Determine matching strategy
+    ------------------------------------------------------------------
+    IF NEW.resale_id IS NOT NULL THEN
+        /* Specific listing mode */
+        SELECT r.*
+          INTO r_resale
+        FROM resale_queue r
+        WHERE r.resale_id   = NEW.resale_id
+          AND r.processed_at IS NULL
+        FOR UPDATE SKIP LOCKED;
+
+        /* 1b) If no row, either it never existed or it’s already done */
+        IF r_resale.resale_id IS NULL THEN
+          RAISE EXCEPTION
+            'Listing % is not available (either doesn’t exist or already sold).',
+            NEW.resale_id;
+        END IF;
+
+        /* Fetch the seller of that specific ticket */
+        SELECT visitor_id
+          INTO v_seller_id
+        FROM ticket
+        WHERE ticket_id = r_resale.ticket_id
+        FOR UPDATE;
+
+        /* Prevent buying your own ticket */
+        IF v_seller_id = NEW.visitor_id THEN
+            RAISE EXCEPTION
+              'Visitor % cannot purchase their own ticket %.',
+              NEW.visitor_id, r_resale.ticket_id;
+        END IF;
+
+    ELSE
+        -- Only check for duplicates in the event+category mode
+        IF EXISTS (
+            SELECT 1
+              FROM buyer_queue bq
+             WHERE bq.visitor_id          = NEW.visitor_id
+               AND bq.event_id            = NEW.event_id
+               AND bq.ticket_category_id  = NEW.ticket_category_id
+               AND bq.buyer_id            <> NEW.buyer_id  -- exclude this row
+               AND bq.processed_at        IS NULL
+             FOR UPDATE
+        ) THEN
+            RAISE EXCEPTION
+              'Visitor % already has an open interest for event % / category %.',
+              NEW.visitor_id, NEW.event_id, NEW.ticket_category_id;
+        END IF;
+
+        /* Event + category mode */
+        SELECT r.*
+          INTO r_resale
+        FROM resale_queue r
+        JOIN ticket t ON t.ticket_id = r.ticket_id
+        WHERE r.processed_at IS NULL
+          AND t.event_id           = NEW.event_id
+          AND t.ticket_category_id = NEW.ticket_category_id
+          AND t.visitor_id         <> NEW.visitor_id   -- skip own listings
+        ORDER BY r.created_at            -- FIFO
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED;
+    END IF;
+
+    ------------------------------------------------------------------
+    -- 2) If no matching resale entry, just leave buyer in queue
+    ------------------------------------------------------------------
+    IF r_resale.resale_id IS NOT NULL THEN
+        ------------------------------------------------------------------
+        -- 3) Transfer ticket ownership
+        ------------------------------------------------------------------
+        UPDATE ticket
+           SET visitor_id    = NEW.visitor_id,
+               purchase_date = CURRENT_TIMESTAMP
+         WHERE ticket_id = r_resale.ticket_id;
+
+        ------------------------------------------------------------------
+        -- 4) Mark resale listing as processed
+        ------------------------------------------------------------------
+        UPDATE resale_queue
+           SET processed_at = CURRENT_TIMESTAMP
+         WHERE resale_id = r_resale.resale_id;
+
+        ------------------------------------------------------------------
+        -- 5) Mark buyer request as processed
+        ------------------------------------------------------------------
+        UPDATE buyer_queue
+           SET processed_at = CURRENT_TIMESTAMP
+         WHERE buyer_id = NEW.buyer_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/*───────────────────────────────────────────────────────────────────
+  Attach AFTER-INSERT trigger to buyer_queue
+───────────────────────────────────────────────────────────────────*/
+DROP TRIGGER IF EXISTS trg_process_buyer_request ON buyer_queue;
+
+CREATE TRIGGER trg_process_buyer_request
+AFTER INSERT ON buyer_queue
+FOR EACH ROW
+EXECUTE FUNCTION process_buyer_request();
 --
 
 
