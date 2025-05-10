@@ -1395,9 +1395,6 @@ ALTER TABLE band_genre
 ALTER TABLE band_membership
   ADD COLUMN media_id INT REFERENCES media(media_id);
 
-ALTER TABLE buyer_queue
-  ADD COLUMN media_id INT REFERENCES media(media_id);
-
 ALTER TABLE continent
   ADD COLUMN media_id INT REFERENCES media(media_id);
 
@@ -1432,9 +1429,6 @@ ALTER TABLE performance
   ADD COLUMN media_id INT REFERENCES media(media_id);
 
 ALTER TABLE performance_rating
-  ADD COLUMN media_id INT REFERENCES media(media_id);
-
-ALTER TABLE resale_queue
   ADD COLUMN media_id INT REFERENCES media(media_id);
 
 ALTER TABLE staff
