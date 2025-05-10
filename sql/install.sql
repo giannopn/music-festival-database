@@ -1348,12 +1348,9 @@ EXECUTE FUNCTION process_buyer_request();
 
 
 CREATE INDEX idx_artist_stage_name ON artist USING btree (stage_name);
-CREATE UNIQUE INDEX idx_artist_instagram ON artist USING btree (instagram_profile);
 CREATE INDEX idx_band_name ON band USING btree (name);
-CREATE UNIQUE INDEX idx_band_instagram ON band USING btree (instagram_profile);
 CREATE INDEX idx_performance_event ON performance USING btree (event_id);
 CREATE INDEX idx_performance_time ON performance USING btree (start_time, end_time);
-CREATE INDEX idx_band_membership_band ON band_membership USING btree (band_id);
 CREATE INDEX idx_genre_name ON genre USING btree (name);
 CREATE INDEX idx_subgenre_name ON subgenre USING btree (name);
 CREATE INDEX idx_subgenre_genre ON subgenre USING btree (genre_id);
