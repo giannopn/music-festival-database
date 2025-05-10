@@ -21,6 +21,6 @@ Additionally, the database is populated with essential test data that enables th
 ## Relational Diagram
 
 ## Contributors
-- Nikolaos Giannopoulos
-- Stavros Pontikis
-- Pasxalis Sarras
+- [Nikolaos Giannopoulos](https://github.com/giannopn)
+- [Stavros Pontikis](https://github.com/stavrospod)
+- [Paschalis Sarras](https://github.com/ntua-el21642)
