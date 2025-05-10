@@ -1491,7 +1491,7 @@ INSERT INTO stage ("name", description, max_capacity, media_id) VALUES
 ('Ultra Music Festival Acoustic Stage', 'Acoustic Stage for Ultra Music Festival', 60, 60),
 ('Montreux Jazz Festival Main Stage', 'Main Stage for Montreux Jazz Festival', 15, 61),
 ('Montreux Jazz Festival Secondary Stage', 'Secondary Stage for Montreux Jazz Festival', 16, 62),
-('Exit Festival Main Stage', 'Main Stage for Exit Festival', 30, 63),
+('Exit Festival Main Stage', 'Main Stage for Exit Festival', 15, 63),
 ('Exit Festival Secondary Stage', 'Secondary Stage for Exit Festival', 40, 64),
 ('Reading Festival Main Stage', 'Main Stage for Reading Festival', 40, 65),
 ('Reading Festival Secondary Stage', 'Secondary Stage for Reading Festival', 60, 66),
@@ -5775,7 +5775,7 @@ INSERT INTO ticket (event_id, visitor_id, purchase_date, ticket_category_id, "co
 (13, 157, '2014-12-19 05:20:55.000', 1, 91.54, 1, '2131484311752', false, 1407),
 (33, 164, '2018-05-23 20:30:50.000', 3, 28.40, 3, '2137835696875', false, 1407),
 (36, 67, '2018-05-01 05:25:22.000', 1, 52.77, 1, '2147301921660', false, 1407),
-(35, 122, '2018-05-03 12:49:09.000', 2, 400.47, 2, '2148801955360', false, 1407),
+(35, 122, '2018-05-03 12:49:09.000', 1, 400.47, 2, '2148801955360', false, 1407),
 (31, 2, '2018-05-27 16:32:05.000', 1, 80.78, 3, '2149062202231', true, 1407),
 (14, 147, '2015-02-20 05:51:13.000', 2, 393.07, 1, '2162676598040', false, 1407),
 (5, 85, '2014-02-06 11:24:25.000', 2, 409.36, 3, '2176024288583', false, 1407),
@@ -5944,7 +5944,7 @@ INSERT INTO ticket (event_id, visitor_id, purchase_date, ticket_category_id, "co
 (6, 35, '2014-03-21 00:24:40.000', 3, 22.01, 3, '6260943309262', false, 1407),
 (34, 36, '2018-05-03 07:14:24.000', 3, 12.62, 3, '6283888928336', false, 1407),
 (26, 146, '2017-02-19 15:16:11.000', 1, 371.69, 3, '6310264237710', false, 1407),
-(33, 82, '2018-06-27 14:30:54.000', 2, 475.53, 1, '6311860822461', false, 1407),
+(33, 82, '2018-06-27 14:30:54.000', 1, 475.53, 1, '6311860822461', false, 1407),
 (28, 43, '2017-03-29 03:01:58.000', 1, 94.37, 2, '6332073936752', false, 1407),
 (11, 68, '2015-01-26 03:17:27.000', 3, 26.67, 3, '6341146703467', true, 1407),
 (12, 145, '2015-02-24 21:44:07.000', 3, 22.64, 3, '6378263649712', false, 1407),
@@ -6172,3 +6172,50 @@ INSERT INTO performance_rating (performance_id, visitor_id, rating_date, artist_
 (19, 151, '2014-07-22 10:00:00.000', 3, 5, 5, 2, 4, 1413),
 (118, 15, '2018-08-06 18:29:00.000', 2, 1, 3, 3, 1, 1413),
 (91, 140, '2017-06-03 17:02:00.000', 3, 2, 2, 1, 3, 1413);
+
+
+-- Insert sample buyer and resale queue entries to demonstrate FIFO matching and trigger-driven processing
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (25, 24, 2);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (39, 24, 2);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (115);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (260);
+
+INSERT INTO buyer_queue (visitor_id, resale_id)
+VALUES (108, 1);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (215);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (117, 35, 2);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (119, 35, 2);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (45);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (121, 35, 2);
+
+INSERT INTO buyer_queue (visitor_id, resale_id)
+VALUES (131, 4);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (226);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (169, 24, 1);
+
+INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
+VALUES (157, 35, 1);
+
+INSERT INTO resale_queue (ticket_id)
+VALUES (189);
