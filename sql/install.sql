@@ -191,49 +191,24 @@ BEFORE INSERT OR UPDATE ON event
 FOR EACH ROW
 EXECUTE FUNCTION check_event_within_festival_dates();
 
--- 1) Trigger function: only allow deleting the earliest or latest performance of an event
-CREATE OR REPLACE FUNCTION prevent_middle_performance_deletion()
+/* 1. Trigger function for event deletion prevention */
+CREATE OR REPLACE FUNCTION prevent_event_deletion()
 RETURNS TRIGGER AS $$
-DECLARE
-    first_perf   INT;
-    last_perf    INT;
 BEGIN
-    -- find the earliest performance_id for this event
-    SELECT p.performance_id
-      INTO first_perf
-    FROM performance p
-    WHERE p.event_id = OLD.event_id
-    ORDER BY p.start_time
-    LIMIT 1;
-
-    -- find the latest performance_id for this event
-    SELECT p.performance_id
-      INTO last_perf
-    FROM performance p
-    WHERE p.event_id = OLD.event_id
-    ORDER BY p.start_time DESC
-    LIMIT 1;
-
-    -- if this is neither the first nor the last, block the delete
-    IF OLD.performance_id <> first_perf
-       AND OLD.performance_id <> last_perf
-    THEN
-        RAISE EXCEPTION
-          'Cannot delete performance %: only first (%) or last (%) of event % may be removed.',
-          OLD.performance_id, first_perf, last_perf, OLD.event_id;
-    END IF;
-
-    RETURN OLD;
+  IF TRUE THEN
+    RAISE EXCEPTION 'Event cannot be deleted!';
+  END IF;
+  RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
--- 2) Attach the trigger
-DROP TRIGGER IF EXISTS trg_prevent_middle_delete ON performance;
+/* 2. Attach the trigger to the event table */
+DROP TRIGGER IF EXISTS trg_block_event_delete ON event;
 
-CREATE TRIGGER trg_prevent_middle_delete
-BEFORE DELETE ON performance
+CREATE TRIGGER trg_block_event_delete
+BEFORE DELETE ON event
 FOR EACH ROW
-EXECUTE FUNCTION prevent_middle_performance_deletion();
+EXECUTE FUNCTION prevent_event_deletion();
 
 -- Check for event overlap on the same stage
 CREATE OR REPLACE FUNCTION check_event_overlap_timestamp()
@@ -533,24 +508,49 @@ BEFORE INSERT OR UPDATE ON band_genre
 FOR EACH ROW
 EXECUTE FUNCTION validate_band_genre_subgenre();
 
-
-CREATE OR REPLACE FUNCTION prevent_performance_deletion()
+-- 1) Trigger function: only allow deleting the earliest or latest performance of an event
+CREATE OR REPLACE FUNCTION prevent_middle_performance_deletion()
 RETURNS TRIGGER AS $$
+DECLARE
+    first_perf   INT;
+    last_perf    INT;
 BEGIN
-  IF TRUE THEN
-    RAISE EXCEPTION 'Performance cannot be deleted!';
-  END IF;
-  RETURN NULL;
+    -- find the earliest performance_id for this event
+    SELECT p.performance_id
+      INTO first_perf
+    FROM performance p
+    WHERE p.event_id = OLD.event_id
+    ORDER BY p.start_time
+    LIMIT 1;
+
+    -- find the latest performance_id for this event
+    SELECT p.performance_id
+      INTO last_perf
+    FROM performance p
+    WHERE p.event_id = OLD.event_id
+    ORDER BY p.start_time DESC
+    LIMIT 1;
+
+    -- if this is neither the first nor the last, block the delete
+    IF OLD.performance_id <> first_perf
+       AND OLD.performance_id <> last_perf
+    THEN
+        RAISE EXCEPTION
+          'Cannot delete performance %: only first (%) or last (%) of event % may be removed.',
+          OLD.performance_id, first_perf, last_perf, OLD.event_id;
+    END IF;
+
+    RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS prevent_delete_performance ON performance;
+-- 2) Attach the trigger
+DROP TRIGGER IF EXISTS trg_prevent_middle_delete ON performance;
 
-CREATE TRIGGER prevent_delete_performance
+CREATE TRIGGER trg_prevent_middle_delete
 BEFORE DELETE ON performance
 FOR EACH ROW
-EXECUTE FUNCTION prevent_performance_deletion();
-
+EXECUTE FUNCTION prevent_middle_performance_deletion();
 
 -- Check if artist/band perform on the same time
 CREATE OR REPLACE FUNCTION prevent_performer_double_booking()
