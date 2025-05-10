@@ -1373,3 +1373,93 @@ CREATE INDEX idx_band_genre_comp   ON band_genre  (genre_id, subgenre_id);
 
 ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);
+
+CREATE TABLE media (
+    media_id     SERIAL PRIMARY KEY,
+    image_url     TEXT NOT NULL UNIQUE,
+    description  TEXT
+);
+
+ALTER TABLE artist
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE artist_genre
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE band
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE band_genre
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE band_membership
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE buyer_queue
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE continent
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE equipment
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE event
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE event_staff
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE experience_level
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE festival
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE genre
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE likert_value
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE location
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE payment_method
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE performance
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE performance_rating
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE resale_queue
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE staff
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE staff_category
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE staff_type
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE stage
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE stage_equipment
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE subgenre
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE ticket
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE ticket_category
+  ADD COLUMN media_id INT REFERENCES media(media_id);
+
+ALTER TABLE visitor
+  ADD COLUMN media_id INT REFERENCES media(media_id);
