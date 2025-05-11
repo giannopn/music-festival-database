@@ -18,4 +18,4 @@ from visitor_artist_scores vas
 join visitor v on vas.visitor_id = v.visitor_id
 join artist  a on vas.artist_id  = a.artist_id
 order by vas.total_score desc
-limit 5;
+limit 5

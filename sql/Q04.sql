@@ -1,4 +1,5 @@
-/* QUERY 04 */
+/* QUERY 04 Για κάποιο καλλιτέχνη, βρείτε το μέσο όρο αξιολογήσεων (Ερμηνεία καλλιτεχνών) και εμφάνιση (Συνολική
+εντύπωση). -- Για τα ερωτήματα 4 και 6, η απάντηση σας θα πρέπει να περιέχει εκτός από το query, εναλλακτικό Query Plan */
 
 explain(
 select a.artist_id, a.stage_name, round(avg(pr.artist_performance_rating),2), round(avg(pr.overall_impression_rating),2) from artist a 
@@ -22,21 +23,4 @@ join artist_performances ap on ap.artist_id = a.artist_id
 join avg_performance_rating apr on apr.performance_id = ap.performance_id
 group by a.artist_id, a.stage_name
 order by artist_id 
-)
-
-
-explain(
-SELECT
-  a.stage_name                                             AS καλλιτέχνης,
-  (SELECT ROUND(AVG(pr.artist_performance_rating),2)
-   FROM performance_rating pr
-   JOIN performance p ON pr.performance_id = p.performance_id
-   WHERE p.artist_id = a.artist_id
-  )                                                         AS avg_artist_performance,
-  (SELECT ROUND(AVG(pr.overall_impression_rating),2)
-   FROM performance_rating pr
-   JOIN performance p ON pr.performance_id = p.performance_id
-   WHERE p.artist_id = a.artist_id
-  )                                                         AS avg_overall_impression
-FROM artist a
 )
