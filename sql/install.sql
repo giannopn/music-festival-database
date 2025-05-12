@@ -1,4 +1,6 @@
+/* Pulse Unicersity Festival Database */
 /* install.sql */
+
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
 SET check_function_bodies = false;
@@ -72,7 +74,6 @@ CREATE TABLE festival (
     FOREIGN KEY (location_id) REFERENCES location(location_id)
 );
 
-/* 1. Trigger function */
 CREATE OR REPLACE FUNCTION prevent_festival_deletion()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -83,7 +84,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/* 2. Attach the trigger */
 DROP TRIGGER IF EXISTS trg_block_festival_delete ON festival;
 
 CREATE TRIGGER trg_block_festival_delete
@@ -151,15 +151,12 @@ RETURNS TRIGGER AS $$
 DECLARE
   st_cat INT;
 BEGIN
-  -- Only check when a staff_type is assigned
   IF NEW.staff_type_id IS NOT NULL THEN
-    -- Lookup the category of that staff_type
     SELECT staff_category_id
       INTO st_cat
     FROM staff_type
     WHERE staff_type_id = NEW.staff_type_id;
 
-    -- If it doesn’t match the staff’s category, block the change
     IF st_cat <> NEW.staff_category_id THEN
       RAISE EXCEPTION
         'Staff type % belongs to category %, but staff has category %',
@@ -171,14 +168,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2. Attach the trigger to fire before INSERT or UPDATE on staff
 DROP TRIGGER IF EXISTS trg_check_staff_type_category ON staff;
 
 CREATE TRIGGER trg_check_staff_type_category
 BEFORE INSERT OR UPDATE ON staff
 FOR EACH ROW
 EXECUTE FUNCTION check_staff_type_category();
-
 
 CREATE TABLE event (
     event_id SERIAL PRIMARY KEY,
@@ -192,29 +187,19 @@ CREATE TABLE event (
     FOREIGN KEY (stage_id) REFERENCES stage(stage_id)
 );
 
-/*───────────────────────────────────────────────────────────────────
-  Trigger function
-  Ensures every event’s time window fits completely inside the
-  date range of its parent festival.
-     • festival.start_date   is taken as 00:00:00 of that day
-     • festival.end_date     is taken as 23:59:59 of that day
-  Any insert or update that violates the rule is rejected.
-───────────────────────────────────────────────────────────────────*/
 CREATE OR REPLACE FUNCTION check_event_within_festival_dates()
 RETURNS TRIGGER AS $$
 DECLARE
-    fest_start_ts TIMESTAMP;   -- festival start at 00:00
-    fest_end_ts   TIMESTAMP;   -- festival end   at 23:59:59
+    fest_start_ts TIMESTAMP;  -- festival starts at 00:00
+    fest_end_ts   TIMESTAMP;  -- festival ends at 23:59:59
 BEGIN
-    /* 1 ── Fetch the festival’s date range */
     SELECT  start_date,
-            end_date + INTERVAL '1 day' - INTERVAL '1 second'   -- 23:59:59
+            end_date + INTERVAL '1 day' - INTERVAL '1 second'
       INTO  fest_start_ts,
             fest_end_ts
     FROM festival
     WHERE festival_id = NEW.festival_id;
 
-    /* 2 ── Validate the event window */
     IF NEW.start_timestamp < fest_start_ts
        OR NEW.end_timestamp   > fest_end_ts
     THEN
@@ -236,7 +221,6 @@ BEFORE INSERT OR UPDATE ON event
 FOR EACH ROW
 EXECUTE FUNCTION check_event_within_festival_dates();
 
-/* 1. Trigger function for event deletion prevention */
 CREATE OR REPLACE FUNCTION prevent_event_deletion()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -247,7 +231,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/* 2. Attach the trigger to the event table */
 DROP TRIGGER IF EXISTS trg_block_event_delete ON event;
 
 CREATE TRIGGER trg_block_event_delete
@@ -255,7 +238,6 @@ BEFORE DELETE ON event
 FOR EACH ROW
 EXECUTE FUNCTION prevent_event_deletion();
 
--- Check for event overlap on the same stage
 CREATE OR REPLACE FUNCTION check_event_overlap_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -295,19 +277,16 @@ RETURNS TRIGGER AS $$
 DECLARE
     new_event RECORD;
 BEGIN
-    -- Get the start and end timestamps for the new event from the event table
     SELECT start_timestamp, end_timestamp
       INTO new_event
       FROM event
      WHERE event_id = NEW.event_id;
 
-    -- Check if there exists any event already assigned to this staff that overlaps in time
     IF EXISTS (
         SELECT 1
           FROM event_staff es
           JOIN event e ON es.event_id = e.event_id
          WHERE es.staff_id = NEW.staff_id
-           -- Exclude the current event in case of an update
            AND e.event_id <> NEW.event_id
            AND new_event.start_timestamp < e.end_timestamp
            AND new_event.end_timestamp > e.start_timestamp
@@ -326,16 +305,6 @@ BEFORE INSERT OR UPDATE ON event_staff
 FOR EACH ROW
 EXECUTE FUNCTION check_staff_event_overlap();
 
-
--- USE IT AS CONSTRAINT TRIGGER, DEFERRABLE INITIALLY DEFERRED
-/*───────────────────────────────────────────────────────────────────
-  Callable procedure:
-  Ensures an event has at least
-     • security staff = 5 % of stage capacity   (rounded up)
-     • support  staff = 2 % of stage capacity   (rounded up)
-  Call it like:
-     SELECT check_event_staff_coverage(42);   -- where 42 = event_id
-───────────────────────────────────────────────────────────────────*/
 CREATE OR REPLACE FUNCTION check_event_staff_coverage(p_event_id INT)
 RETURNS VOID AS $$
 DECLARE
@@ -345,18 +314,16 @@ DECLARE
     sec_count  INT;
     sup_count  INT;
 BEGIN
-    /* 1. Get stage capacity for this event */
     SELECT s.max_capacity
       INTO cap
     FROM event  e
     JOIN stage  s ON s.stage_id = e.stage_id
     WHERE e.event_id = p_event_id;
 
-    /* 2. Required head-counts (ceiling) */
     sec_req := CEIL(cap * 0.05)::INT;
     sup_req := CEIL(cap * 0.02)::INT;
 
-    /* 3. Count assigned SECURITY staff */
+    -- Count assigned SECURITY staff
     SELECT COUNT(*)
       INTO sec_count
     FROM event_staff es
@@ -364,7 +331,7 @@ BEGIN
     WHERE es.event_id           = p_event_id
       AND st.staff_category_id = 2;
 
-    /* 4. Count assigned SUPPORT staff */
+    -- Count assigned SUPPORT staff
     SELECT COUNT(*)
       INTO sup_count
     FROM event_staff es
@@ -372,7 +339,6 @@ BEGIN
     WHERE es.event_id           = p_event_id
       AND st.staff_category_id = 3;
 
-    /* 5. Enforce */
     IF sec_count < sec_req THEN
         RAISE EXCEPTION
           'Event %: % security staff assigned, minimum % (5%% of % capacity).',
@@ -386,11 +352,6 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
-
---sources
---https://neon.tech/postgresql/postgresql-tutorial/postgresql-time
---https://www.geeksforgeeks.org/how-to-design-er-diagrams-for-online-ticketing-and-event-management/
---https://vertabelo.com/blog/er-diagram-movie-database/
 
 CREATE TABLE genre (
     genre_id serial PRIMARY KEY,
@@ -416,11 +377,6 @@ CREATE SEQUENCE band_id_seq
     NO MINVALUE
     CACHE 1;
 
-
---sources
---date_of_birth: https://dev.to/insolita/postgres-and-birthday-dates-3ji4 and age https://stackoverflow.com/questions/40072914/postgresql-age-calculation-from-date-type
---website https://stackoverflow.com/questions/41633436/datatype-for-a-url-in-postgresql
---insta https://www.geeksforgeeks.org/how-to-design-a-database-for-instagram/
 CREATE TABLE artist(
   artist_id integer DEFAULT nextval('artist_id_seq'::regclass) PRIMARY KEY,
   real_name varchar(255) NOT NULL,
@@ -466,19 +422,11 @@ CREATE TABLE band_membership (
     FOREIGN KEY (band_id) REFERENCES band (band_id) ON DELETE CASCADE
 );
 
-
 CREATE SEQUENCE performance_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
-
-
---sources:
--- nextval instead of serial  https://stackoverflow.com/questions/34034702/postgresql-sequence-vs-serial
--- Primary Key and Foreign key https://www.postgresql.org/docs/current/ddl-constraints.html
---time to check if timezone is needed?
---Ensure sequential performances within an event
 
 CREATE TABLE performance (
     performance_id integer DEFAULT nextval('performance_id_seq'::regclass) PRIMARY KEY,
@@ -489,7 +437,7 @@ CREATE TABLE performance (
     performance_type varchar(255) NOT NULL,
     start_time timestamp NOT NULL,
     end_time timestamp NOT NULL,
-    duration integer GENERATED ALWAYS AS ((EXTRACT(EPOCH FROM end_time - start_time) / 60)::integer) STORED, --in minutes
+    duration integer GENERATED ALWAYS AS ((EXTRACT(EPOCH FROM end_time - start_time) / 60)::integer) STORED,
     FOREIGN KEY (artist_id) references artist (artist_id),
     FOREIGN KEY (band_id) references band (band_id),
     CHECK (start_time < end_time),
@@ -499,7 +447,6 @@ CREATE TABLE performance (
         (band_id IS NOT NULL AND artist_id IS NULL)
     )
 );
-
 
 CREATE OR REPLACE FUNCTION validate_artist_genre_subgenre()
 RETURNS TRIGGER AS $$
@@ -513,9 +460,11 @@ BEGIN
           AND genre_id = NEW.genre_id;
 
         IF valid_match = 0 THEN
-            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in artist_genre.', NEW.subgenre_id, NEW.genre_id;
+            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in artist_genre.',
+                NEW.subgenre_id, NEW.genre_id;
         END IF;
     END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -539,7 +488,8 @@ BEGIN
           AND genre_id = NEW.genre_id;
 
         IF valid_match = 0 THEN
-            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in band_genre.', NEW.subgenre_id, NEW.genre_id;
+            RAISE EXCEPTION 'Subgenre % does not belong to Genre % in band_genre.',
+                NEW.subgenre_id, NEW.genre_id;
         END IF;
     END IF;
     RETURN NEW;
@@ -553,14 +503,12 @@ BEFORE INSERT OR UPDATE ON band_genre
 FOR EACH ROW
 EXECUTE FUNCTION validate_band_genre_subgenre();
 
--- 1) Trigger function: only allow deleting the earliest or latest performance of an event
 CREATE OR REPLACE FUNCTION prevent_middle_performance_deletion()
 RETURNS TRIGGER AS $$
 DECLARE
     first_perf   INT;
     last_perf    INT;
 BEGIN
-    -- find the earliest performance_id for this event
     SELECT p.performance_id
       INTO first_perf
     FROM performance p
@@ -568,7 +516,6 @@ BEGIN
     ORDER BY p.start_time
     LIMIT 1;
 
-    -- find the latest performance_id for this event
     SELECT p.performance_id
       INTO last_perf
     FROM performance p
@@ -576,7 +523,6 @@ BEGIN
     ORDER BY p.start_time DESC
     LIMIT 1;
 
-    -- if this is neither the first nor the last, block the delete
     IF OLD.performance_id <> first_perf
        AND OLD.performance_id <> last_perf
     THEN
@@ -589,7 +535,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2) Attach the trigger
 DROP TRIGGER IF EXISTS trg_prevent_middle_delete ON performance;
 
 CREATE TRIGGER trg_prevent_middle_delete
@@ -597,21 +542,18 @@ BEFORE DELETE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION prevent_middle_performance_deletion();
 
--- Check if artist/band perform on the same time
 CREATE OR REPLACE FUNCTION prevent_performer_double_booking()
 RETURNS TRIGGER AS $$
 BEGIN
-    /* ─────────────────────────────────────────────────────────────
-       Check overlap for an ARTIST
-    ───────────────────────────────────────────────────────────── */
+    -- Check ARTIST
     IF NEW.artist_id IS NOT NULL THEN
         IF EXISTS (
             SELECT 1
               FROM performance p
              WHERE p.artist_id       = NEW.artist_id
-               AND p.performance_id <> NEW.performance_id           -- exclude self
-               AND p.event_id       <> NEW.event_id                -- different event
-               AND p.start_time <  NEW.end_time         -- time ranges overlap
+               AND p.performance_id <> NEW.performance_id
+               AND p.event_id       <> NEW.event_id
+               AND p.start_time <  NEW.end_time
                AND p.end_time   >  NEW.start_time
         ) THEN
             RAISE EXCEPTION
@@ -619,9 +561,7 @@ BEGIN
               NEW.artist_id;
         END IF;
 
-    /* ─────────────────────────────────────────────────────────────
-       Check overlap for a BAND
-    ───────────────────────────────────────────────────────────── */
+    -- Check BAND
     ELSIF NEW.band_id IS NOT NULL THEN
         IF EXISTS (
             SELECT 1
@@ -657,9 +597,7 @@ DECLARE
   ev_start   TIMESTAMP;
   ev_end     TIMESTAMP;
 BEGIN
-  /* ------------------------------------------------------------------
-     0)  Make sure the performance window is inside the event window
-  ------------------------------------------------------------------ */
+  -- Check if performance is within event time window
   SELECT start_timestamp, end_timestamp
     INTO ev_start, ev_end
   FROM event
@@ -685,7 +623,7 @@ BEGIN
       NEW.name, NEW.start_time, NEW.end_time, NEW.event_id;
   END IF;
 
-  -- 1) Find the previous performance’s end_time (exclude self)
+  -- Check for break before
   SELECT end_time
     INTO prev_end
   FROM performance
@@ -705,7 +643,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 2) Find the next performance’s start_time (exclude self)
+  -- Check for break after
   SELECT start_time
     INTO next_start
   FROM performance
@@ -736,33 +674,21 @@ BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION check_performance_overlap_and_breaks();
 
-
-/* ---------------------------------------------------------------
-   Block an artist or band that has already performed
-   in each of the three immediately-preceding festival years
-   from being booked again this year.
----------------------------------------------------------------- */
 CREATE OR REPLACE FUNCTION check_performer_fourth_consecutive_year()
 RETURNS TRIGGER AS $$
 DECLARE
     curr_year  INT;
     prev_count INT;
 BEGIN
-    /*-----------------------------------------------------------
-      1.  Determine the festival year of the performance
-    -----------------------------------------------------------*/
+    -- Find the year of festival
     SELECT f.year
       INTO curr_year
     FROM event     e
     JOIN festival  f ON f.festival_id = e.festival_id
     WHERE e.event_id = NEW.event_id;
 
-    /*-----------------------------------------------------------
-      2.  Decide whether the performer is an artist or a band
-    -----------------------------------------------------------*/
     IF NEW.artist_id IS NOT NULL THEN
-        /* Count distinct years (current_year-1 .. -3)
-           where THIS artist has already performed               */
+        -- Check if artist has performed in the last three years
         SELECT COUNT(DISTINCT f.year)
           INTO prev_count
         FROM performance p
@@ -770,16 +696,16 @@ BEGIN
         JOIN festival   f ON e.festival_id = f.festival_id
         WHERE p.artist_id = NEW.artist_id
           AND f.year      IN (curr_year-1, curr_year-2, curr_year-3)
-          AND p.performance_id <> NEW.performance_id;  -- exclude self on UPDATE
+          AND p.performance_id <> NEW.performance_id;
 
         IF prev_count = 3 THEN
             RAISE EXCEPTION
-              'Artist % has already performed in the last three consecutive festival years; cannot book a fourth (%).',
-              NEW.artist_id, curr_year;
+              'Artist % has already performed in the last three consecutive festival years.',
+              NEW.artist_id;
         END IF;
 
     ELSIF NEW.band_id IS NOT NULL THEN
-        /* Same logic for a band */
+        -- Check if band has performed in the last three years
         SELECT COUNT(DISTINCT f.year)
           INTO prev_count
         FROM performance p
@@ -791,8 +717,8 @@ BEGIN
 
         IF prev_count = 3 THEN
             RAISE EXCEPTION
-              'Band % has already performed in the last three consecutive festival years; cannot book a fourth (%).',
-              NEW.band_id, curr_year;
+              'Band % has already performed in the last three consecutive festival years.',
+              NEW.band_id;
         END IF;
     END IF;
 
@@ -806,10 +732,6 @@ CREATE TRIGGER trg_check_performer_years
 BEFORE INSERT OR UPDATE ON performance
 FOR EACH ROW
 EXECUTE FUNCTION check_performer_fourth_consecutive_year();
-
-
-
-
 
 CREATE TABLE ticket_category (
     ticket_category_id SERIAL PRIMARY KEY,
@@ -847,11 +769,9 @@ ALTER TABLE ticket
 DROP CONSTRAINT IF EXISTS chk_ean13_valid,
 ADD CONSTRAINT chk_ean13_valid
   CHECK (
-    -- must be exactly 13 digits
+    -- ean13_code must be 13 digits
     ean13_code ~ '^[0-9]{13}$'
-    AND
-    -- weighted sum of all 13 digits ≡ 0 mod 10
-    (
+    AND (
       (substr(ean13_code,  1, 1)::int * 1) +
       (substr(ean13_code,  2, 1)::int * 3) +
       (substr(ean13_code,  3, 1)::int * 1) +
@@ -868,33 +788,29 @@ ADD CONSTRAINT chk_ean13_valid
     ) % 10 = 0
   );
 
--- 1. Create trigger function to enforce capacity for sold tickets
 CREATE OR REPLACE FUNCTION check_ticket_capacity()
 RETURNS TRIGGER AS $$
 DECLARE
     sold_count INT;
     capacity   INT;
 BEGIN
-    -- Lookup the stage capacity for this event
     SELECT s.max_capacity
       INTO capacity
     FROM event e
     JOIN stage s ON e.stage_id = s.stage_id
     WHERE e.event_id = NEW.event_id;
 
-    -- Count existing sold tickets for the event, excluding this row if it exists
     SELECT COUNT(*)
       INTO sold_count
     FROM ticket t
     WHERE t.event_id = NEW.event_id
       AND t.ticket_id  <> NEW.ticket_id;
 
-    -- If this new/updated ticket is sold, include it in the tally
+    -- Include the new/updated ticket
     IF NEW.visitor_id IS NOT NULL THEN
         sold_count := sold_count + 1;
     END IF;
 
-    -- Enforce: sold_count must not exceed capacity
     IF sold_count > capacity THEN
         RAISE EXCEPTION
           'Cannot sell % tickets for event %, capacity is %.',
@@ -906,14 +822,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_check_ticket_capacity ON ticket;
--- 2. Attach the trigger to run before each insert or update on ticket
+
 CREATE TRIGGER trg_check_ticket_capacity
 BEFORE INSERT OR UPDATE ON ticket
 FOR EACH ROW
 EXECUTE FUNCTION check_ticket_capacity();
 
-
--- Enforce VIP tickets to be 10% of max_capacity
 CREATE OR REPLACE FUNCTION enforce_vip_ticket_limit()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -921,19 +835,18 @@ DECLARE
     vip_limit INT;
     vip_count INT;
 BEGIN
-    -- Only enforce for VIP tickets (category_id = 2)
+    -- ticket_category_id = 2 is VIP
     IF NEW.ticket_category_id <> 2 THEN
         RETURN NEW;
     END IF;
 
-    -- A. Fetch stage capacity for this event
     SELECT s.max_capacity
       INTO capacity
     FROM event e
     JOIN stage s ON e.stage_id = s.stage_id
     WHERE e.event_id = NEW.event_id;
 
-    -- B. Count existing VIP tickets for this event (unsold + sold, exclude self on UPDATE)
+    -- Count existing VIP tickets
     SELECT COUNT(*)
       INTO vip_count
     FROM ticket t
@@ -941,13 +854,12 @@ BEGIN
       AND t.ticket_category_id = 2
       AND t.ticket_id <> NEW.ticket_id;
 
-    -- C. Include the new/updated ticket
+    -- Include the new/updated ticket
     vip_count := vip_count + 1;
 
-    -- D. Compute 10% limit (ceiling)
+    -- 10% of max_capacity limit
     vip_limit := CEIL(capacity * 0.10);
 
-    -- E. Enforce
     IF vip_count > vip_limit THEN
         RAISE EXCEPTION
           'Cannot have % VIP tickets for event %: limit is % (10%% of %).',
@@ -972,32 +884,28 @@ DECLARE
     cap      INT;
     sold_cnt INT;
 BEGIN
-    /* Determine which event we must refresh */
-    IF TG_OP = 'DELETE' THEN          -- row is being removed
+    IF TG_OP = 'DELETE' THEN
         evt_id := OLD.event_id;
-    ELSE                              -- INSERT or UPDATE
+    ELSE
         evt_id := NEW.event_id;
     END IF;
 
-    /* 1. Capacity of the stage for that event */
     SELECT s.max_capacity
       INTO cap
     FROM event  e
     JOIN stage  s ON s.stage_id = e.stage_id
     WHERE e.event_id = evt_id;
 
-    /* 2. Count sold tickets (visitor_id NOT NULL) */
     SELECT COUNT(*)
       INTO sold_cnt
     FROM ticket t
     WHERE t.event_id    = evt_id;
 
-    /* 3. Mark the event sold-out status */
+    -- Update the sold_out status
     UPDATE event
        SET sold_out = (sold_cnt >= cap)
      WHERE event_id = evt_id;
 
-    /* Trigger rows must return something */
     IF TG_OP = 'DELETE' THEN
         RETURN OLD;
     ELSE
@@ -1031,25 +939,16 @@ CREATE TABLE performance_rating (
     UNIQUE (performance_id, visitor_id)
 );
 
-/*───────────────────────────────────────────────────────────────────
-  Trigger function
-  Allows a row in performance_rating to be inserted / updated only if
-    • the visitor holds at least one ticket for the **event** of
-      the performance being rated, **and**
-    • that ticket is already used  (ticket.used = TRUE)
-───────────────────────────────────────────────────────────────────*/
 CREATE OR REPLACE FUNCTION chk_rating_allowed()
 RETURNS TRIGGER AS $$
 DECLARE
     v_event_id INT;
 BEGIN
-    /* 1. Find the event of the performance being rated */
     SELECT event_id
       INTO v_event_id
     FROM performance
     WHERE performance_id = NEW.performance_id;
 
-    /* 2. Verify visitor has a USED ticket for that event */
     IF NOT EXISTS (
         SELECT 1
           FROM ticket t
@@ -1066,9 +965,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/*───────────────────────────────────────────────────────────────────
-  Attach BEFORE INSERT / UPDATE trigger to performance_rating table
-───────────────────────────────────────────────────────────────────*/
 DROP TRIGGER IF EXISTS trg_chk_rating_allowed ON performance_rating;
 
 CREATE TRIGGER trg_chk_rating_allowed
@@ -1076,9 +972,6 @@ BEFORE INSERT OR UPDATE ON performance_rating
 FOR EACH ROW
 EXECUTE FUNCTION chk_rating_allowed();
 
-/* ──────────────────────────────────────────────────────────────
-   1.  Table: resale_queue
-   ────────────────────────────────────────────────────────────── */
 CREATE TABLE resale_queue (
     resale_id     SERIAL PRIMARY KEY,
     ticket_id     INT  NOT NULL REFERENCES ticket(ticket_id) ON DELETE CASCADE,
@@ -1086,9 +979,6 @@ CREATE TABLE resale_queue (
     processed_at  TIMESTAMP
 );
 
-/* ──────────────────────────────────────────────────────────────
-   2.  Table: buyer_queue
-   ────────────────────────────────────────────────────────────── */
 CREATE TABLE buyer_queue (
     buyer_id           SERIAL PRIMARY KEY,
     visitor_id         INT  NOT NULL REFERENCES visitor(visitor_id) ON DELETE CASCADE,
@@ -1109,34 +999,18 @@ CREATE TABLE buyer_queue (
     )
 );
 
--- Fast lookup for open resale listings, one active row per ticket
 CREATE INDEX resale_open_idx
   ON resale_queue(ticket_id)
-  WHERE processed_at IS NULL;      -- partial unique index
+  WHERE processed_at IS NULL;
 
--- Quickly match buyers waiting for a given event / category
 CREATE INDEX buyer_event_category_open_idx
   ON buyer_queue(event_id, ticket_category_id)
   WHERE resale_id IS NULL AND processed_at IS NULL;
 
--- Quickly match buyers waiting for a specific resale ticket
 CREATE INDEX buyer_resale_open_idx
   ON buyer_queue(resale_id)
   WHERE resale_id IS NOT NULL AND processed_at IS NULL;
 
-/*──────────────────────────────────────────────────────────────────
-  AFTER-INSERT trigger on resale_queue
-  •  Checks that the ticket’s event is sold-out
-  •  Checks that the ticket is NOT used
-  •  FIFO-matches the listing with the first waiting buyer
-    (same event & ticket-category, buyer_queue.processed_at IS NULL)
-  •  On a match:
-        – transfers the ticket to the buyer (updates visitor_id,
-          sets purchase_date = today)
-        – stamps CURRENT_TIMESTAMP into   resale_queue.processed_at
-        – stamps CURRENT_TIMESTAMP into   buyer_queue.processed_at
-──────────────────────────────────────────────────────────────────*/
--- 1. Trigger function: validate and process a new resale listing
 CREATE OR REPLACE FUNCTION process_resale_listing()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -1146,9 +1020,7 @@ DECLARE
     v_seller_id   INT;
     v_buyer       RECORD;
 BEGIN
-    --------------------------------------------------------------------------------
-    -- 0) Prevent more than one *active* listing per ticket
-    --------------------------------------------------------------------------------
+    -- 1) Check if the ticket is already listed for resale
     IF EXISTS (
        SELECT 1
          FROM resale_queue r
@@ -1162,7 +1034,7 @@ BEGIN
           NEW.ticket_id;
     END IF;
 
-    -- 1) Lock & fetch the ticket’s event, category & used‐flag
+    -- 2) Check if ticket is already used
     SELECT t.event_id,
            t.ticket_category_id,
            t.used,
@@ -1172,14 +1044,13 @@ BEGIN
     WHERE t.ticket_id = NEW.ticket_id
     FOR UPDATE;
 
-    -- 2) Reject if the ticket has already been used
     IF v_used THEN
         RAISE EXCEPTION
           'Cannot list ticket % for resale: it has already been used.',
           NEW.ticket_id;
     END IF;
 
-    -- 3) Reject if the event is not sold out
+    -- 3) Check if the event is sold out
     IF NOT EXISTS (
         SELECT 1
           FROM event e
@@ -1191,7 +1062,7 @@ BEGIN
           NEW.ticket_id, v_event_id;
     END IF;
 
-    -- 4) Attempt FIFO‐safe match with the first waiting buyer
+    -- 4) Search for a buyer (FIFO)
     SELECT *
       INTO v_buyer
     FROM buyer_queue b
@@ -1199,36 +1070,31 @@ BEGIN
       AND b.resale_id           IS NULL
       AND b.event_id            = v_event_id
       AND b.ticket_category_id  = v_category_id
-      AND b.visitor_id         <> v_seller_id    -- skip the original owner
+      AND b.visitor_id         <> v_seller_id -- exclude owner
     ORDER BY b.created_at
     LIMIT 1
     FOR UPDATE SKIP LOCKED;
 
-    -- 5) If a buyer is found, transfer ticket and mark both queues processed
+    -- 5) Complete transaction if match
     IF FOUND THEN
-        -- 5a) transfer ticket ownership
         UPDATE ticket
            SET visitor_id    = v_buyer.visitor_id,
                purchase_date = CURRENT_TIMESTAMP
          WHERE ticket_id = NEW.ticket_id;
 
-        -- 5b) mark buyer request fulfilled
         UPDATE buyer_queue
            SET processed_at = CURRENT_TIMESTAMP
          WHERE buyer_id = v_buyer.buyer_id;
 
-        -- 5c) mark this resale listing processed
         UPDATE resale_queue
            SET processed_at = CURRENT_TIMESTAMP
          WHERE resale_id = NEW.resale_id;
     END IF;
 
-    -- 6) always keep the resale_queue row (processed_at NULL if no match)
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- 2. Attach the AFTER INSERT trigger
 DROP TRIGGER IF EXISTS trg_process_resale_listing ON resale_queue;
 
 CREATE TRIGGER trg_process_resale_listing
@@ -1236,17 +1102,14 @@ AFTER INSERT ON resale_queue
 FOR EACH ROW
 EXECUTE FUNCTION process_resale_listing();
 
--- 1) Create a trigger function that fires when a ticket is marked used
 CREATE OR REPLACE FUNCTION cleanup_resale_on_ticket_used()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Only act when used flips to TRUE
+    -- used: FALSE → TRUE
     IF (TG_OP = 'UPDATE')
       AND (OLD.used IS DISTINCT FROM NEW.used)
       AND NEW.used = TRUE
     THEN
-        -- Mark any active resale listing for this ticket as processed,
-        -- so buyers won’t match against it
         UPDATE resale_queue
            SET processed_at = CURRENT_TIMESTAMP
          WHERE ticket_id    = NEW.ticket_id
@@ -1257,8 +1120,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
--- 2) Attach it as an AFTER UPDATE trigger on ticket.used
 DROP TRIGGER IF EXISTS trg_cleanup_resale_on_ticket_used ON ticket;
 
 CREATE TRIGGER trg_cleanup_resale_on_ticket_used
@@ -1267,29 +1128,15 @@ FOR EACH ROW
 WHEN (OLD.used IS DISTINCT FROM NEW.used AND NEW.used = TRUE)
 EXECUTE FUNCTION cleanup_resale_on_ticket_used();
 
-/*───────────────────────────────────────────────────────────────────
-  AFTER-INSERT trigger on buyer_queue
-  •  If buyer requests a *specific* resale listing (resale_id-mode)
-       – fetch that resale row (unprocessed) and lock it
-  •  Else (event+category mode)
-       – pick the oldest unprocessed resale listing whose ticket
-         matches (event_id , ticket_category_id)
-  •  If a resale listing is found
-       – transfer ticket to this buyer
-       – mark BOTH rows processed_at = NOW()
-       – (and, if not already set, copy resale_id into buyer row)
-───────────────────────────────────────────────────────────────────*/
 CREATE OR REPLACE FUNCTION process_buyer_request()
 RETURNS TRIGGER AS $$
 DECLARE
     r_resale          RECORD;
     v_seller_id         INT;
 BEGIN
-    ------------------------------------------------------------------
-    -- 1) Determine matching strategy
-    ------------------------------------------------------------------
     IF NEW.resale_id IS NOT NULL THEN
-        /* Specific listing mode */
+        -- For specific resale ticket request
+        -- Check if resale ticket available
         SELECT r.*
           INTO r_resale
         FROM resale_queue r
@@ -1297,21 +1144,19 @@ BEGIN
           AND r.processed_at IS NULL
         FOR UPDATE SKIP LOCKED;
 
-        /* 1b) If no row, either it never existed or it’s already done */
         IF r_resale.resale_id IS NULL THEN
           RAISE EXCEPTION
             'Listing % is not available (either doesn’t exist or already sold).',
             NEW.resale_id;
         END IF;
 
-        /* Fetch the seller of that specific ticket */
+        -- Prevent buying your own ticket
         SELECT visitor_id
           INTO v_seller_id
         FROM ticket
         WHERE ticket_id = r_resale.ticket_id
         FOR UPDATE;
 
-        /* Prevent buying your own ticket */
         IF v_seller_id = NEW.visitor_id THEN
             RAISE EXCEPTION
               'Visitor % cannot purchase their own ticket %.',
@@ -1319,14 +1164,15 @@ BEGIN
         END IF;
 
     ELSE
-        -- Only check for duplicates in the event+category mode
+        -- For event + category request
+        -- Check if the request is already in the queue
         IF EXISTS (
             SELECT 1
               FROM buyer_queue bq
              WHERE bq.visitor_id          = NEW.visitor_id
                AND bq.event_id            = NEW.event_id
                AND bq.ticket_category_id  = NEW.ticket_category_id
-               AND bq.buyer_id            <> NEW.buyer_id  -- exclude this row
+               AND bq.buyer_id            <> NEW.buyer_id  -- exclude owner
                AND bq.processed_at        IS NULL
              FOR UPDATE
         ) THEN
@@ -1335,7 +1181,7 @@ BEGIN
               NEW.visitor_id, NEW.event_id, NEW.ticket_category_id;
         END IF;
 
-        /* Event + category mode */
+        -- Search for a resale ticket (FIFO)
         SELECT r.*
           INTO r_resale
         FROM resale_queue r
@@ -1343,34 +1189,23 @@ BEGIN
         WHERE r.processed_at IS NULL
           AND t.event_id           = NEW.event_id
           AND t.ticket_category_id = NEW.ticket_category_id
-          AND t.visitor_id         <> NEW.visitor_id   -- skip own listings
-        ORDER BY r.created_at            -- FIFO
+          AND t.visitor_id         <> NEW.visitor_id   -- exclude owner
+        ORDER BY r.created_at
         LIMIT 1
         FOR UPDATE SKIP LOCKED;
     END IF;
 
-    ------------------------------------------------------------------
-    -- 2) If no matching resale entry, just leave buyer in queue
-    ------------------------------------------------------------------
+    -- Complete transaction if match
     IF r_resale.resale_id IS NOT NULL THEN
-        ------------------------------------------------------------------
-        -- 3) Transfer ticket ownership
-        ------------------------------------------------------------------
         UPDATE ticket
            SET visitor_id    = NEW.visitor_id,
                purchase_date = CURRENT_TIMESTAMP
          WHERE ticket_id = r_resale.ticket_id;
 
-        ------------------------------------------------------------------
-        -- 4) Mark resale listing as processed
-        ------------------------------------------------------------------
         UPDATE resale_queue
            SET processed_at = CURRENT_TIMESTAMP
          WHERE resale_id = r_resale.resale_id;
 
-        ------------------------------------------------------------------
-        -- 5) Mark buyer request as processed
-        ------------------------------------------------------------------
         UPDATE buyer_queue
            SET processed_at = CURRENT_TIMESTAMP
          WHERE buyer_id = NEW.buyer_id;
@@ -1380,17 +1215,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/*───────────────────────────────────────────────────────────────────
-  Attach AFTER-INSERT trigger to buyer_queue
-───────────────────────────────────────────────────────────────────*/
 DROP TRIGGER IF EXISTS trg_process_buyer_request ON buyer_queue;
 
 CREATE TRIGGER trg_process_buyer_request
 AFTER INSERT ON buyer_queue
 FOR EACH ROW
 EXECUTE FUNCTION process_buyer_request();
---
-
 
 CREATE INDEX idx_artist_stage_name ON artist USING btree (stage_name);
 CREATE INDEX idx_band_name ON band USING btree (name);
@@ -1413,8 +1243,6 @@ CREATE INDEX idx_ticket_event_sold   ON ticket(event_id);
 CREATE INDEX idx_performance_event_time ON performance(event_id, start_time, end_time);
 CREATE INDEX idx_artist_genre_comp ON artist_genre(genre_id, subgenre_id);
 CREATE INDEX idx_band_genre_comp   ON band_genre  (genre_id, subgenre_id);
-
-
 
 ALTER TABLE band_membership ADD CONSTRAINT unique_band_membership UNIQUE (artist_id, band_id);
 ALTER TABLE subgenre ADD CONSTRAINT unique_subgenre_genre UNIQUE (genre_id, name);

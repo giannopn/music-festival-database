@@ -1,11 +1,12 @@
+/* Pulse Unicersity Festival Database */
 /* load.sql */
+
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
 --SET search_path = public, pg_catalog;
-
 
 INSERT INTO media (image_url, description) VALUES
 ('https://exm.pl/xy06gl', 'Foxtrot kilo echo'),
@@ -6174,7 +6175,7 @@ INSERT INTO performance_rating (performance_id, visitor_id, rating_date, artist_
 (91, 140, '2017-06-03 17:02:00.000', 3, 2, 2, 1, 3, 1413);
 
 
--- Insert sample buyer and resale queue entries to demonstrate FIFO matching and trigger-driven processing
+-- Insert sample buyer and resale queue entries to demonstrate FIFO matching
 INSERT INTO buyer_queue (visitor_id, event_id, ticket_category_id)
 VALUES (25, 24, 2);
 
