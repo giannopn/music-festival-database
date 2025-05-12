@@ -142,7 +142,7 @@ CREATE TABLE event (
     start_timestamp TIMESTAMP NOT NULL,
     end_timestamp TIMESTAMP NOT NULL,
     stage_id INT NOT NULL,
-    sold_out BOOLEAN,
+    sold_out BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (festival_id) REFERENCES festival(festival_id),
     FOREIGN KEY (stage_id) REFERENCES stage(stage_id)
 );
