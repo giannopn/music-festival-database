@@ -1,3 +1,48 @@
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = off;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--SET search_path = public, pg_catalog;
+
+-- Drop all tables in correct order to avoid FK constraint issues
+DROP TABLE IF EXISTS
+    stage_equipment,
+    event_staff,
+    performance_rating,
+    performance,
+    resale_queue,
+    buyer_queue,
+    ticket,
+    staff,
+    staff_type,
+    staff_category,
+    experience_level,
+    event,
+    festival,
+    stage,
+    location,
+    media,
+    artist_genre,
+    band_genre,
+    band_membership,
+    artist,
+    band,
+    subgenre,
+    genre,
+    ticket_category,
+    payment_method,
+    visitor,
+    equipment,
+    continent,
+    likert_value
+CASCADE;
+
+-- Drop sequences if they exist (to reset auto-increment counters)
+DROP SEQUENCE IF EXISTS artist_id_seq CASCADE;
+DROP SEQUENCE IF EXISTS band_id_seq CASCADE;
+DROP SEQUENCE IF EXISTS performance_id_seq CASCADE;
+
 CREATE TABLE continent (
     continent_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
