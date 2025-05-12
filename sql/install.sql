@@ -1,3 +1,4 @@
+/* install.sql */
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
 SET check_function_bodies = false;
@@ -5,7 +6,7 @@ SET client_min_messages = warning;
 
 --SET search_path = public, pg_catalog;
 
--- Drop all tables in correct order to avoid FK constraint issues
+-- Drop all tables
 DROP TABLE IF EXISTS
     stage_equipment,
     event_staff,
@@ -38,7 +39,7 @@ DROP TABLE IF EXISTS
     likert_value
 CASCADE;
 
--- Drop sequences if they exist (to reset auto-increment counters)
+-- Drop sequences
 DROP SEQUENCE IF EXISTS artist_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS band_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS performance_id_seq CASCADE;
@@ -145,7 +146,6 @@ CREATE TABLE staff (
     FOREIGN KEY (experience_level_id) REFERENCES experience_level(experience_level_id)
 );
 
--- 1. Trigger function: ensure staff_type’s category matches staff_category
 CREATE OR REPLACE FUNCTION check_staff_type_category()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -1081,7 +1081,7 @@ EXECUTE FUNCTION chk_rating_allowed();
    ────────────────────────────────────────────────────────────── */
 CREATE TABLE resale_queue (
     resale_id     SERIAL PRIMARY KEY,
-    ticket_id     INT  NOT NULL REFERENCES ticket(ticket_id),
+    ticket_id     INT  NOT NULL REFERENCES ticket(ticket_id) ON DELETE CASCADE,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at  TIMESTAMP
 );
@@ -1091,7 +1091,7 @@ CREATE TABLE resale_queue (
    ────────────────────────────────────────────────────────────── */
 CREATE TABLE buyer_queue (
     buyer_id           SERIAL PRIMARY KEY,
-    visitor_id         INT  NOT NULL REFERENCES visitor(visitor_id),
+    visitor_id         INT  NOT NULL REFERENCES visitor(visitor_id) ON DELETE CASCADE,
     event_id           INT REFERENCES event(event_id),
     ticket_category_id INT REFERENCES ticket_category(ticket_category_id),
     resale_id          INT,
