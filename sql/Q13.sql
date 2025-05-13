@@ -1,4 +1,7 @@
-/* QUERY 13 - Βρείτε τους καλλιτέχνες που έχουν συμμετάσχει σε φεστιβάλ σε τουλάχιστον 3 διαφορετικές ηπείρους.*/
+/* QUERY 13
+   Βρείτε τους καλλιτέχνες που έχουν συμμετάσχει σε φεστιβάλ σε τουλάχιστον 3 διαφορετικές ηπείρους.
+*/
+
 with festival_per_continent as ( --festival per continent
 	select f.festival_id, c.name as continent
 	from festival f 

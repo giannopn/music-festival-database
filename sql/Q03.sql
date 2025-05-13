@@ -1,4 +1,7 @@
-/* QUERY 03 - Βρείτε ποιοι καλλιτέχνες έχουν εμφανιστεί ως warm up περισσότερες από 2 φορές στο ίδιο φεστιβάλ; */
+/* QUERY 03
+   Βρείτε ποιοι καλλιτέχνες έχουν εμφανιστεί ως warm up περισσότερες από 2 φορές στο ίδιο φεστιβάλ;
+*/
+
 select f.name as festival_name, f.year, a.stage_name
 from performance p
 join event     e on p.event_id    = e.event_id

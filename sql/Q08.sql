@@ -1,4 +1,7 @@
-/* QUERY 08 - Βρείτε το προσωπικό υποστήριξης που δεν έχει προγραμματισμένη εργασία σε συγκεκριμένη ημερομηνία;*/
+/* QUERY 08
+   Βρείτε το προσωπικό υποστήριξης που δεν έχει προγραμματισμένη εργασία σε συγκεκριμένη ημερομηνία;
+*/
+
 select s.staff_id, s.first_name, s.last_name from staff s 
 join staff_category sc ON s.staff_category_id = sc.staff_category_id 
 where sc.name = 'Support'

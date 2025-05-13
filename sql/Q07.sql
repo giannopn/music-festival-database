@@ -1,4 +1,7 @@
-/* QUERY 07 - Βρείτε ποιο φεστιβάλ είχε τον χαμηλότερο μέσο όρο εμπειρίας τεχνικού προσωπικού;*/
+/* QUERY 07
+   Βρείτε ποιο φεστιβάλ είχε τον χαμηλότερο μέσο όρο εμπειρίας τεχνικού προσωπικού;
+*/
+
 select f.name as festival_name, round(avg(s.experience_level_id),2) as avg_experience_level 
 from event e 
 join event_staff es on e.event_id = es.event_id 
