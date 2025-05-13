@@ -1,4 +1,4 @@
-/* Pulse Unicersity Festival Database */
+/* Pulse University Festival Database */
 /* load.sql */
 
 SET client_encoding = 'UTF8';
@@ -6,7 +6,7 @@ SET standard_conforming_strings = off;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
---SET search_path = public, pg_catalog;
+SET search_path = public, pg_catalog;
 
 INSERT INTO media (image_url, description) VALUES
 ('https://exm.pl/xy06gl', 'Foxtrot kilo echo'),
@@ -6106,11 +6106,11 @@ INSERT INTO ticket (event_id, visitor_id, purchase_date, ticket_category_id, cos
 (75, 159, '2025-04-24 19:54:04.000', 3, 22.08, 1, '9997663935989', true, 1407);
 
 INSERT INTO likert_value (likert_value_id, label, media_id) VALUES
-(1, 'Strongly Disagree', 1408),
-(2, 'Disagree', 1409),
-(3, 'Neutral', 1410),
-(4, 'Agree', 1411),
-(5, 'Strongly Agree', 1412);
+(1, 'Very Poor', 1408),
+(2, 'Poor', 1409),
+(3, 'Fair', 1410),
+(4, 'Good', 1411),
+(5, 'Excellent', 1412);
 
 INSERT INTO performance_rating (performance_id, visitor_id, rating_date, artist_performance_rating, sound_lighting_rating, stage_presence_rating, organization_rating, overall_impression_rating, media_id) VALUES
 (104, 168, '2017-06-05 20:37:00.000', 2, 3, 2, 2, 5, 1413),
