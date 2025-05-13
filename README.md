@@ -1,24 +1,57 @@
 # Festival Management Database
 
 ## Overview
-This project implements a **PostgreSQL** database for managing the annual Pulse University music festival. It covers:
+This project implements a **PostgreSQL** database for managing the annual Pulse University music festival. It models and manages:
 
 - Festivals, Events & Performances
-- Venue locations 
+- Venue locations
 - Stages & Technical equipment
-- Staff assignment with roles
-- Artists & bands, musical genres & sub-genres
-- Tickets, resale queue & buyer queue  
-- Performance ratings (Likert scale)  
-- Image/media management
+- Staff assignments with role categories and experience levels
+-	Artists & bands with genre and subgenre information
+-	Ticketing system with purchase tracking
+-	Automatic resale system with buyer-seller matching logic
+-	Performance ratings based on the Likert scale
+-	Media management for images and descriptions
 
 The system includes a wide range of **constraints**, **functions**, and **triggers** to ensure the correct operation of the database and maintain data integrity and consistency throughout all use cases.
 
-Additionally, the database is populated with essential test data that enables the verification and demonstration of all major functionalities and constraints.
+Additionally, the database is populated with essential test data (randomly generated) that enables the verification and demonstration of all major functionalities and constraints.
 
 ## ER Diagram
 
 ## Relational Diagram
+
+## File Structure
+- `diagrams/`  
+  - `er.pdf`: Entity-Relationship diagram showing entities and their relationships.
+  - `relational.pdf`: Relational schema diagram detailing tables, attributes, and foreign keys.
+
+- `sql/`  
+  - `install.sql`: Creates all tables, constraints, functions, triggers, and indexes.
+  - `load.sql`: Inserts test/sample data into the database.
+  - `Qx.sql`: SQL query files for each exercise (e.g., Q01.sql, Q02.sql, ...).
+  - `Qx_out.txt`: Output of each query execution (e.g., Q01_out.txt, Q02_out.txt, ...).
+
+- `docs/`  
+  - `report.pdf`: Report with analysis, explanations, and conclusions related to the database project.
+
+## Installation
+**To set up the database:**
+1.	Create a new PostgreSQL database (e.g., named festival_db).
+1.	Run `install.sql` to create all tables, constraints, functions, triggers, and indexes.
+1.	Run `load.sql` to populate the database with sample/test data.
+
+**How to run the scripts (psql terminal):**
+```bash
+psql -U your_username -d festival_db -f install.sql
+psql -U your_username -d festival_db -f load.sql
+```
+Replace your_username and festival_db with your actual PostgreSQL username and database name.
+
+> **Note**  
+> Both `install.sql` and `load.sql` begin with `SET search_path = public, pg_catalog;` to ensure that all objects are created and accessed in the `public` schema by default. No additional schema configuration is required unless you’ve made custom changes.
+
+**Requirements:** PostgreSQL version 14 or newer (tested on PostgreSQL 17)
 
 ## Contributors
 - [Nikolaos Giannopoulos](https://github.com/giannopn)
