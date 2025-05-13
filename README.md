@@ -18,6 +18,7 @@ The system includes a wide range of **constraints**, **functions**, and **trigge
 Additionally, the database is populated with essential test data (randomly generated) that enables the verification and demonstration of all major functionalities and constraints.
 
 ## ER Diagram
+![ER Diagram](diagrams/er.svg)
 
 ## Relational Diagram
 
