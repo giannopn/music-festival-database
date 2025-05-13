@@ -1,0 +1,16 @@
++---------------+-------------+
+|stage_name     |appeared     |
++---------------+-------------+
+|Alicia Keys    |not appearred|
+|Chris Stapleton|not appearred|
+|Diplo          |not appearred|
+|Doja Cat       |not appearred|
+|Dua Lipa       |appearred    |
+|Excision       |not appearred|
+|Fatboy Slim    |not appearred|
+|Jimmy Page     |not appearred|
+|Justin Bieber  |appearred    |
+|Marshmello     |not appearred|
+|Steve Aoki     |not appearred|
+|The Weeknd     |not appearred|
++---------------+-------------+

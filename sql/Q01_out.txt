@@ -1,0 +1,45 @@
++------------------------------------+--------------+----+-------------+
+|festival_name                       |payment_method|year|total_revenue|
++------------------------------------+--------------+----+-------------+
+|Tomorrowland                        |Bank Account  |2014|2579.08      |
+|Tomorrowland                        |Credit Card   |2014|3487.87      |
+|Tomorrowland                        |Debit Card    |2014|2172.68      |
+|New Orleans Jazz & Heritage Festival|Bank Account  |2015|3323.13      |
+|New Orleans Jazz & Heritage Festival|Credit Card   |2015|2871.03      |
+|New Orleans Jazz & Heritage Festival|Debit Card    |2015|2742.51      |
+|Osheaga                             |Bank Account  |2016|1916.6       |
+|Osheaga                             |Credit Card   |2016|2021.3       |
+|Osheaga                             |Debit Card    |2016|2707.01      |
+|Primavera Sound                     |Bank Account  |2017|2976.98      |
+|Primavera Sound                     |Credit Card   |2017|3852.22      |
+|Primavera Sound                     |Debit Card    |2017|2675.68      |
+|Lollapalooza                        |Bank Account  |2018|3694.96      |
+|Lollapalooza                        |Credit Card   |2018|2946.93      |
+|Lollapalooza                        |Debit Card    |2018|2745.95      |
+|Electric Daisy Carnival             |Bank Account  |2019|1003.35      |
+|Electric Daisy Carnival             |Credit Card   |2019|335.33       |
+|Electric Daisy Carnival             |Debit Card    |2019|254.55       |
+|Montreux Jazz Festival              |Bank Account  |2020|339.96       |
+|Montreux Jazz Festival              |Credit Card   |2020|105.93       |
+|Exit Festival                       |Bank Account  |2021|267.98       |
+|Exit Festival                       |Credit Card   |2021|423.16       |
+|Exit Festival                       |Debit Card    |2021|224.8        |
+|Reading Festival                    |Credit Card   |2022|486.66       |
+|Reading Festival                    |Debit Card    |2022|70.52        |
+|Sziget Festival                     |Bank Account  |2023|74.02        |
+|Sziget Festival                     |Credit Card   |2023|1037.8       |
+|Sziget Festival                     |Debit Card    |2023|175.8        |
+|Pinkpop                             |Bank Account  |2024|1338.1       |
+|Pinkpop                             |Credit Card   |2024|22.36        |
+|Rock Werchter                       |Bank Account  |2025|140.22       |
+|Rock Werchter                       |Debit Card    |2025|1144.42      |
+|Creamfields                         |Bank Account  |2026|56.51        |
+|Creamfields                         |Credit Card   |2026|372.99       |
+|Creamfields                         |Debit Card    |2026|291.63       |
+|Coachella                           |Bank Account  |2027|655.57       |
+|Coachella                           |Credit Card   |2027|326.76       |
+|Coachella                           |Debit Card    |2027|187.22       |
+|Fairbridge Festival                 |Bank Account  |2028|52.27        |
+|Fairbridge Festival                 |Credit Card   |2028|575.4        |
+|Fairbridge Festival                 |Debit Card    |2028|27.49        |
++------------------------------------+--------------+----+-------------+

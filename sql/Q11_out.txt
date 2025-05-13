@@ -1,0 +1,84 @@
++---------+------------------+--------------------+
+|artist_id|stage_name        |count_participations|
++---------+------------------+--------------------+
+|17       |Axl Rose          |5                   |
+|80       |Excision          |5                   |
+|9        |Jimmy Page        |5                   |
+|28       |Justin Bieber     |5                   |
+|90       |Martin Garrix     |4                   |
+|42       |Doja Cat          |3                   |
+|60       |Diplo             |3                   |
+|85       |Marshmello        |3                   |
+|61       |Steve Aoki        |3                   |
+|77       |Afrojack          |2                   |
+|48       |Norah Jones       |2                   |
+|82       |Flux Pavilion     |2                   |
+|59       |Fatboy Slim       |2                   |
+|6        |Keith Richards    |2                   |
+|45       |Alicia Keys       |2                   |
+|43       |Justin Timberlake |2                   |
+|49       |Chris Stapleton   |2                   |
+|50       |Luke Combs        |2                   |
+|19       |Steven Tyler      |2                   |
+|34       |Olivia Rodrigo    |2                   |
+|35       |Post Malone       |2                   |
+|37       |Rihanna           |2                   |
+|74       |Axwell            |2                   |
+|7        |Charlie Watts     |2                   |
+|46       |John Legend       |1                   |
+|47       |Michael Bublé     |1                   |
+|51       |Calvin Harris     |1                   |
+|52       |Alan Walker       |1                   |
+|53       |DJ Snake          |1                   |
+|54       |Alesso            |1                   |
+|55       |Armin van Buuren  |1                   |
+|56       |Tiesto            |1                   |
+|57       |Paul Oakenfold    |1                   |
+|58       |Carl Cox          |1                   |
+|62       |Kaskade           |1                   |
+|63       |Porter Robinson   |1                   |
+|64       |Madeon            |1                   |
+|65       |Eric Prydz        |1                   |
+|66       |Paul Kalkbrenner  |1                   |
+|68       |Lost Frequencies  |1                   |
+|69       |Jonas Blue        |1                   |
+|70       |Sigala            |1                   |
+|71       |Moby              |1                   |
+|72       |Kygo              |1                   |
+|73       |Sebastian Ingrosso|1                   |
+|75       |Nicky Romero      |1                   |
+|76       |R3hab             |1                   |
+|78       |Illenium          |1                   |
+|79       |Seven Lions       |1                   |
+|83       |Boris Brejcha     |1                   |
+|84       |Zedd              |1                   |
+|86       |Skrillex          |1                   |
+|87       |Avicii            |1                   |
+|88       |Deadmau5          |1                   |
+|89       |Hardwell          |1                   |
+|1        |John Lennon       |1                   |
+|91       |David Guetta      |1                   |
+|2        |Paul McCartney    |1                   |
+|4        |Ringo Starr       |1                   |
+|5        |Mick Jagger       |1                   |
+|8        |Ronnie Wood       |1                   |
+|10       |Robert Plant      |1                   |
+|11       |John Bonham       |1                   |
+|12       |John Paul Jones   |1                   |
+|13       |David Gilmour     |1                   |
+|14       |Roger Waters      |1                   |
+|16       |Brian May         |1                   |
+|20       |Joe Perry         |1                   |
+|22       |Beyoncé           |1                   |
+|24       |Drake             |1                   |
+|25       |Adele             |1                   |
+|26       |Bruno Mars        |1                   |
+|27       |Lady Gaga         |1                   |
+|29       |Ariana Grande     |1                   |
+|30       |Billie Eilish     |1                   |
+|32       |Shawn Mendes      |1                   |
+|33       |Harry Styles      |1                   |
+|38       |Sia               |1                   |
+|41       |Lil Nas X         |1                   |
+|44       |Usher             |1                   |
++---------+------------------+--------------------+

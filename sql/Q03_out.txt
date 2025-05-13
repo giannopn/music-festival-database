@@ -1,0 +1,7 @@
++---------------+----+---------------+
+|festival_name  |year|stage_name     |
++---------------+----+---------------+
+|Primavera Sound|2017|Martin Garrix  |
+|Lollapalooza   |2018|Freddie Mercury|
+|Tomorrowland   |2014|Dua Lipa       |
++---------------+----+---------------+

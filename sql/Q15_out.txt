@@ -1,0 +1,9 @@
++--------------+------------+-----------+
+|visitor_name  |stage_name  |total_score|
++--------------+------------+-----------+
+|Amanda Torres |David Guetta|20         |
+|Joshua Adams  |The Weeknd  |19         |
+|Daniel Baker  |Mick Jagger |18         |
+|Deborah Garcia|Excision    |17         |
+|Richard Wilson|Dua Lipa    |17         |
++--------------+------------+-----------+
