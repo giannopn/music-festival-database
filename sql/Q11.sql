@@ -1,7 +1,4 @@
-/* QUERY 11
-   Βρείτε όλους τους καλλιτέχνες που συμμετείχαν τουλάχιστον 5 λιγότερες φορές από τον καλλιτέχνη
-   με τις περισσότερες συμμετοχές σε φεστιβάλ.
-*/
+/* QUERY 11 */
 
 with all_artist_participations as (
 	select a.artist_id, a.stage_name, count(e.festival_id) as count_participations 

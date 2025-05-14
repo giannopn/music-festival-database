@@ -1,6 +1,4 @@
-/* QUERY 05
-   Βρείτε τους νέους καλλιτέχνες (ηλικία < 30 ετών) που έχουν τις περισσότερες συμμετοχές σε φεστιβάλ;
-*/
+/* QUERY 05 */
 
 with under_30 as (
 	select a.artist_id, a.stage_name, count(distinct e.festival_id) as number_of_appearences from artist a 
@@ -11,7 +9,6 @@ with under_30 as (
 	order by 3 desc 
 	),
 max_cnt as (
-    /* Μέγιστος αριθμός συμμετοχών */
     select MAX(number_of_appearences) AS top_cnt
     from   under_30
     )

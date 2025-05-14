@@ -1,7 +1,4 @@
-/* QUERY 01
-   Βρείτε τα έσοδα του φεστιβάλ, ανά έτος από την πώληση εισιτηρίων, λαμβάνοντας υπόψη όλες τις
-   κατηγορίες εισιτηρίων και παρέχοντας ανάλυση ανά είδος πληρωμής.
-*/
+/* QUERY 01 */
 
 select f.name as festival_name, pm.name as payment_method, f.year,  SUM(tic.cost) as total_revenue from ticket tic
 join event eve on (eve.event_id = tic.event_id)

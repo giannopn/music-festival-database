@@ -1,7 +1,4 @@
-/* QUERY 09
-   Βρείτε ποιοι επισκέπτες έχουν παρακολουθήσει τον ίδιο αριθμό παραστάσεων σε διάστημα ενός έτους
-   με περισσότερες από 3 παρακολουθήσεις;
-*/
+/* QUERY 09 */
 
 with visitors_events_per_year as (
 	select f.year, t.visitor_id, count(*) as freq from event e 

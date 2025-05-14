@@ -1,16 +1,13 @@
-/* QUERY 06
-   Για κάποιο επισκέπτη, βρείτε τις παραστάσεις που έχει παρακολουθήσει και το μέσο όρο
-   της αξιολόγησης του, ανά παράσταση.
+/* QUERY 06 */
 
-   Στην αναφορά έγινε χρήση του explain() για να κάνουμε ανάλυση του εκτιμώμενου κόστους 
-*/
-
-
+/* Hash Join */
 select p.performance_id, p.name, 
 ROUND( (pr.artist_performance_rating + pr.sound_lighting_rating + pr.stage_presence_rating + pr.organization_rating + pr.overall_impression_rating) / 5.0 , 2) as average_rating  
 from performance p 
 join performance_rating pr on pr.performance_id = p.performance_id 
 where pr.visitor_id = 2
+
+/* Merge Join */
 /*
 WITH
   average_ratings AS (

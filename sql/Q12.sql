@@ -1,10 +1,7 @@
-/* QUERY 12
-   Βρείτε το προσωπικό που απαιτείται για κάθε ημέρα του φεστιβάλ, παρέχοντας ανάλυση
-   ανά κατηγορία (τεχνικό προσωπικό ασφαλείας, βοηθητικό προσωπικό);
-*/
+/* QUERY 12 */
 
 
-with festival_per_day as( --festival per day
+with festival_per_day as(
 	select e.festival_id, date(start_timestamp) as running_date, e.event_id from event e 
 	where festival_id = 1
 	union

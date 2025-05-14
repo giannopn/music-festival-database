@@ -1,7 +1,4 @@
-/* QUERY 14
-   Βρείτε ποια μουσικά είδη είχαν τον ίδιο αριθμό εμφανίσεων σε δύο συνεχόμενες χρονιές με
-   τουλάχιστον 3 εμφανίσεις ανά έτος;
-*/
+/* QUERY 14 */
 
 	with perf_genre as (
 	  select p.performance_id, f.year as festival_year, ag.genre_id
@@ -23,7 +20,7 @@
 	)
 	select g.name as genre_name, g1.festival_year  as year1, g2.festival_year  as year2, g1.appearances as appearances_per_year
 	from genre_year_counts g1
-	join genre_year_counts g2 on g1.genre_id= g2.genre_id 
+	join genre_year_counts g2 on g1.genre_id= g2.genre_id
 	join genre g on g.genre_id=g1.genre_id
 	where g1.appearances >= 3
 	and g2.appearances= g1.appearances
