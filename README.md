@@ -1,7 +1,7 @@
 # Festival Management Database
 
 ## Overview
-This project implements a **PostgreSQL** database for managing the annual Pulse University music festival. It models and manages:
+This project implements a **PostgreSQL** database for managing the annual **Pulse University Music Festival**. It models and manages:
 
 - Festivals, Events & Performances
 - Venue locations
@@ -21,6 +21,7 @@ Additionally, the database is populated with essential test data (randomly gener
 ![ER Diagram](diagrams/er.svg)
 
 ## Relational Diagram
+![Relational Diagram](diagrams/relational.svg)
 
 ## File Structure
 - `diagrams/`  
@@ -42,15 +43,16 @@ Additionally, the database is populated with essential test data (randomly gener
 1.	Run `install.sql` to create all tables, constraints, functions, triggers, and indexes.
 1.	Run `load.sql` to populate the database with sample/test data.
 
-**How to run the scripts (psql terminal):**
+**How to run the scripts (from terminal):**
 ```bash
 psql -U your_username -d festival_db -f install.sql
 psql -U your_username -d festival_db -f load.sql
 ```
-Replace your_username and festival_db with your actual PostgreSQL username and database name.
+Replace _your_username_ and _festival_db_ with your actual PostgreSQL username and database name.
 
-> **Note**  
-> Both `install.sql` and `load.sql` begin with `SET search_path = public, pg_catalog;` to ensure that all objects are created and accessed in the `public` schema by default. No additional schema configuration is required unless you’ve made custom changes.
+> **Notes**
+> - Make sure the psql command-line tool is installed and added to your system’s PATH.
+> - Both `install.sql` and `load.sql` begin with `SET search_path = public, pg_catalog;` to ensure that all objects are created and accessed in the `public` schema by default. No additional schema configuration is required unless you’ve made custom changes.
 
 **Requirements:** PostgreSQL version 14 or newer (tested on PostgreSQL 17)
 
