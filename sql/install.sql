@@ -768,7 +768,7 @@ CREATE TABLE visitor (
 CREATE TABLE ticket (
     ticket_id          SERIAL PRIMARY KEY,
     event_id           INT            NOT NULL REFERENCES event (event_id),
-    visitor_id         INT            NOT NULL REFERENCES visitor (visitor_id),
+    visitor_id         INT            NOT NULL REFERENCES visitor (visitor_id) ON DELETE CASCADE,
     purchase_date      TIMESTAMP      NOT NULL,
     ticket_category_id INT            NOT NULL REFERENCES ticket_category (ticket_category_id),
     cost               NUMERIC(10, 2) NOT NULL,
