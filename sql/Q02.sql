@@ -16,3 +16,4 @@ join genre g on (g.genre_id= ag.genre_id)
 join "event" e on (e.event_id=p.event_id)
 join festival f ON (f.festival_id = e.festival_id)
 where f.year = 2014
+order by 1
