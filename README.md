@@ -40,13 +40,15 @@ Additionally, the database is populated with essential test data (randomly gener
 ## Installation
 **To set up the database:**
 1.	Create a new PostgreSQL database (e.g., named festival_db).
-1.	Run `install.sql` to create all tables, constraints, functions, triggers, and indexes.
-1.	Run `load.sql` to populate the database with sample/test data.
+2.	Run `install.sql` to create all tables, constraints, functions, triggers, and indexes.
+3.	Run `load.sql` to populate the database with sample/test data.
+4.	Run the SQL queries in the `Qx.sql` files to execute project-related questions and tasks.
 
 **How to run the scripts (from terminal):**
 ```bash
 psql -U your_username -d festival_db -f install.sql
 psql -U your_username -d festival_db -f load.sql
+psql -U your_username -d festival_db -f Qx.sql
 ```
 Replace _your_username_ and _festival_db_ with your actual PostgreSQL username and database name.
 
