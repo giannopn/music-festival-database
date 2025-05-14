@@ -15,5 +15,5 @@ max_cnt as (
     select MAX(number_of_appearences) AS top_cnt
     from   under_30
     )
-select u30.stage_name, mx.top_cnt from under_30 u30
+select u30.stage_name, mx.top_cnt as max_participations from under_30 u30
 join max_cnt mx on mx.top_cnt = u30.number_of_appearences
