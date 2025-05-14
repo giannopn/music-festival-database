@@ -55,6 +55,7 @@ Replace _your_username_ and _festival_db_ with your actual PostgreSQL username a
 > **Notes**
 > - Make sure the psql command-line tool is installed and added to your system’s PATH.
 > - Both `install.sql` and `load.sql` begin with `SET search_path = public, pg_catalog;` to ensure that all objects are created and accessed in the `public` schema by default. No additional schema configuration is required unless you’ve made custom changes.
+> - Alternatively, you may run the SQL scripts through a graphical DBMS interface (such as pgAdmin, DataGrip, or DBeaver) by opening each file and executing it against your database.
 
 **Requirements:** PostgreSQL version 14 or newer (tested on PostgreSQL 17)
 
