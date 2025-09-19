@@ -31,11 +31,11 @@ Additionally, the database is populated with essential test data (randomly gener
 - `sql/`  
   - `install.sql`: Creates all tables, constraints, functions, triggers, and indexes.
   - `load.sql`: Inserts test/sample data into the database.
-  - `Qx.sql`: SQL query files for each exercise (e.g., Q01.sql, Q02.sql, ...).
-  - `Qx_out.txt`: Output of each query execution (e.g., Q01_out.txt, Q02_out.txt, ...).
+  - `queries/Qx.sql`: SQL query files for each exercise (e.g., Q01.sql, Q02.sql, ...).
+  - `queries/Qx_out.txt`: Output of each query execution (e.g., Q01_out.txt, Q02_out.txt, ...).
 
-- `docs/`
-  - `project_description.pdf`: Description of the project assignment and requirements.
+- `docs/`  
+  - `project_description.pdf`: Description of the project assignment, including the requirements and query questions.
   - `report.pdf`: Report with analysis, explanations, and conclusions related to the database project.
 
 ## Installation
