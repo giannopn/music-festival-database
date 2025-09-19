@@ -34,7 +34,8 @@ Additionally, the database is populated with essential test data (randomly gener
   - `Qx.sql`: SQL query files for each exercise (e.g., Q01.sql, Q02.sql, ...).
   - `Qx_out.txt`: Output of each query execution (e.g., Q01_out.txt, Q02_out.txt, ...).
 
-- `docs/`  
+- `docs/`
+  - `project_description.pdf`: Description of the project assignment and requirements.
   - `report.pdf`: Report with analysis, explanations, and conclusions related to the database project.
 
 ## Installation
@@ -60,6 +61,6 @@ Replace _your_username_ and _festival_db_ with your actual PostgreSQL username a
 **Requirements:** PostgreSQL version 14 or newer (tested on PostgreSQL 17)
 
 ## Contributors
-- [Nikolaos Giannopoulos](https://github.com/giannopn)
+- [Nikos Giannopoulos](https://github.com/giannopn)
 - [Stavros Pontikis](https://github.com/stavrospod)
 - [Paschalis Sarras](https://github.com/ntua-el21642)
